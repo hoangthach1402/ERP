@@ -118,15 +118,9 @@ export class Product {
       return this.findById(productId);
     }
 
-    // Move to next stage
+    // Move to next stage (task already exists from product creation)
     await dbRun('UPDATE products SET current_stage_id = ?, status = ? WHERE id = ?', 
-      [nextStage.id, 'processing', productId]);
-
-    // Create product_stage_task for next stage
-    await dbRun(
-      'INSERT INTO product_stage_tasks (product_id, stage_id, status) VALUES (?, ?, ?)',
-      [productId, nextStage.id, 'pending']
-    );
+      [nextStage.id, 'pending', productId]);
 
     return this.findById(productId);
   }

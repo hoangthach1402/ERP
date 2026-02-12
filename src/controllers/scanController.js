@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import { ProductStageTask, Stage } from '../models/Stage.js';
 import ActivityLog from '../models/ActivityLog.js';
+import { notifyCompletedProductCat } from '../services/telegramCatNotification.js';
 
 export const getScanPage = async (req, res) => {
   try {
@@ -162,6 +163,9 @@ export const completeTask = async (req, res) => {
 
     await ProductStageTask.completeTask(currentTask.id);
 
+    // Store current stage before moving
+    const completedStageId = product.current_stage_id;
+
     // Move to next stage
     const nextProduct = await Product.moveToNextStage(productId);
 
@@ -172,6 +176,14 @@ export const completeTask = async (req, res) => {
       productId,
       product.current_stage_id
     );
+
+    // Send notification to BP CẮT when RẬP (stage 1) is completed
+    if (completedStageId === 1 && nextProduct.current_stage_id === 2) {
+      notifyCompletedProductCat({
+        product_code: nextProduct.product_code,
+        product_name: nextProduct.product_name
+      }).catch(err => console.error('Telegram CAT notification error:', err));
+    }
 
     res.json({
       success: true,

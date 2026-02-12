@@ -67,6 +67,3 @@ export default {
   notifyNewProductRap
 };
 
-export default {
-  notifyNewProductRap
-};
