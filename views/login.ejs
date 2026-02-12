@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Nhập - Hệ Thống Quản Lý Sản Xuất</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="w-full max-w-md">
+    <div class="bg-white rounded-lg shadow-2xl p-8">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Manufacturing ERP</h1>
+        <p class="text-gray-500 mt-2">Hệ Thống Quản Lý Sản Xuất May</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <%= error %>
+        </div>
+      <% } %>
+
+      <form method="POST" action="/login" class="space-y-4">
+        <div>
+          <label for="username" class="block text-gray-700 text-sm font-bold mb-2">
+            Tên Đăng Nhập
+          </label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            required
+            placeholder="Nhập tên đăng nhập"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+        </div>
+
+        <div>
+          <label for="password" class="block text-gray-700 text-sm font-bold mb-2">
+            Mật Khẩu
+          </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            placeholder="Nhập mật khẩu"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-2 px-4 rounded-lg hover:shadow-lg transition duration-300"
+        >
+          Đăng Nhập
+        </button>
+      </form>
+
+      <hr class="my-6">
+
+      <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+        <p class="text-sm font-bold text-blue-900">Thông tin đăng nhập Demo:</p>
+        <p class="text-sm text-blue-800">Username: <strong>admin</strong></p>
+        <p class="text-sm text-blue-800">Password: <strong>admin123</strong></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

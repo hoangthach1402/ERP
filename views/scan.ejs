@@ -1,0 +1,349 @@
+<%- include('header') %>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- QR Scanner Section -->
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h1 class="text-3xl font-bold text-gray-800 mb-6">
+        <i class="fas fa-qrcode text-purple-600 mr-3"></i> Quét Mã QR
+      </h1>
+
+      <div class="mb-6">
+        <label class="block text-gray-700 text-sm font-bold mb-2">Mã Sản Phẩm</label>
+        <input
+          type="text"
+          id="productCode"
+          placeholder="Nhập hoặc quét mã sản phẩm"
+          autofocus
+          class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-lg"
+        >
+      </div>
+
+      <div id="productInfo" class="hidden">
+        <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 mb-6">
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <p class="text-gray-600 text-sm">Mã Sản Phẩm</p>
+              <p id="infoCode" class="text-2xl font-bold text-gray-800"></p>
+            </div>
+            <div>
+              <p class="text-gray-600 text-sm">Tên Sản Phẩm</p>
+              <p id="infoName" class="text-lg font-semibold text-gray-800"></p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-gray-600 text-sm">Khâu Hiện Tại</p>
+              <p id="infoStage" class="text-lg font-semibold text-purple-600"></p>
+            </div>
+            <div>
+              <p class="text-gray-600 text-sm">Trạng Thái</p>
+              <span id="infoStatus" class="text-sm font-semibold px-3 py-1 rounded-full"></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="actionButtons" class="space-y-3"></div>
+      </div>
+
+      <div id="scanMessage" class="text-center py-12 text-gray-500">
+        <i class="fas fa-scanner text-6xl mb-4 opacity-50"></i>
+        <p class="text-lg">Quét mã QR hoặc nhập mã sản phẩm để bắt đầu</p>
+      </div>
+
+      <!-- Available Products List -->
+      <% 
+        const products = (availableProducts && Array.isArray(availableProducts)) ? availableProducts : [];
+      %>
+      <% if (products.length > 0) { %>
+        <div class="mt-8 border-t pt-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">Sản Phẩm Sẵn Sàng Trong Khâu Của Bạn</h3>
+          <div class="space-y-2 max-h-96 overflow-y-auto">
+            <% products.forEach((product, index) => { %>
+              <div class="cursor-pointer p-3 rounded-lg border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition product-item" 
+                   data-product-code="<%= product.product_code %>">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="font-semibold text-gray-800"><%= product.product_code %></p>
+                    <p class="text-sm text-gray-600"><%= product.product_name %></p>
+                  </div>
+                  <div class="text-right">
+                    <% if (product.task_status === 'pending') { %>
+                      <span class="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">CHỜ ĐỢI</span>
+                    <% } else if (product.task_status === 'processing') { %>
+                      <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">ĐANG LÀM</span>
+                    <% } else { %>
+                      <span class="inline-block bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded">CHƯA RÕ</span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="mt-8 border-t pt-6 text-center">
+          <p class="text-gray-500">
+            <i class="fas fa-inbox text-2xl mb-2 opacity-50"></i>
+            <p class="mt-2">Không có sản phẩm nào trong khâu của bạn</p>
+          </p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div>
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-bold text-gray-800 mb-4">Thông Tin Công Nhân</h2>
+      <div class="space-y-4">
+        <div>
+          <p class="text-gray-600 text-sm">Tên</p>
+          <p class="text-lg font-semibold text-gray-800"><%= user.full_name %></p>
+        </div>
+        <div>
+          <p class="text-gray-600 text-sm">Vai Trò</p>
+          <p class="text-sm font-semibold px-3 py-1 bg-purple-100 text-purple-800 rounded-full w-fit">
+            <%= user.role %>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage Definitions -->
+    <div class="bg-white rounded-lg shadow p-6 mt-6">
+      <h2 class="text-lg font-bold text-gray-800 mb-4">Các Khâu Sản Xuất</h2>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between p-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded">
+          <span class="font-semibold">1. Rập</span>
+          <span class="text-blue-700">4h</span>
+        </div>
+        <div class="flex justify-between p-2 bg-gradient-to-r from-teal-50 to-teal-100 rounded">
+          <span class="font-semibold">2. Cắt</span>
+          <span class="text-teal-700">4h</span>
+        </div>
+        <div class="flex justify-between p-2 bg-gradient-to-r from-amber-50 to-amber-100 rounded">
+          <span class="font-semibold">3. May</span>
+          <span class="text-amber-700">6h</span>
+        </div>
+        <div class="flex justify-between p-2 bg-gradient-to-r from-orange-50 to-orange-100 rounded">
+          <span class="font-semibold">4. Thiết Kế Đắp</span>
+          <span class="text-orange-700">6h</span>
+        </div>
+        <div class="flex justify-between p-2 bg-gradient-to-r from-red-50 to-red-100 rounded">
+          <span class="font-semibold">5. Đính Kết</span>
+          <span class="text-red-700">12h</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentProduct = null;
+const productCodeInput = document.getElementById('productCode');
+const productInfo = document.getElementById('productInfo');
+const scanMessage = document.getElementById('scanMessage');
+
+// Define all functions first
+async function scanProduct(code) {
+  try {
+    const response = await fetch('/scan/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productCode: code })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      currentProduct = data.product;
+      displayProductInfo(data.product, data.task);
+      productCodeInput.value = '';
+      productCodeInput.focus();
+    } else {
+      let errorMsg = data.error || 'Sản phẩm không tìm thấy';
+      showScanError(errorMsg);
+      productCodeInput.value = '';
+      productCodeInput.focus();
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showScanError('Lỗi server, vui lòng thử lại');
+    productCodeInput.value = '';
+    productCodeInput.focus();
+  }
+}
+
+function showScanError(message) {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded text-red-700';
+  messageDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
+  
+  scanMessage.parentElement.insertBefore(messageDiv, scanMessage.nextSibling);
+  
+  setTimeout(() => messageDiv.remove(), 5000);
+}
+
+function displayProductInfo(product, task) {
+  document.getElementById('infoCode').textContent = product.code;
+  document.getElementById('infoName').textContent = product.name;
+  document.getElementById('infoStage').textContent = product.currentStage;
+
+  if (!task) {
+    showScanError('Không tìm thấy công việc cho khâu này');
+    return;
+  }
+
+  let statusBadge = document.getElementById('infoStatus');
+  let statusClass = '';
+
+  if (task.status === 'pending') {
+    statusBadge.textContent = '⏸️ CHỜ ĐỢI';
+    statusClass = 'bg-yellow-100 text-yellow-800';
+  } else if (task.status === 'processing') {
+    statusBadge.textContent = '⏱️ ĐANG LÀM';
+    statusClass = 'bg-blue-100 text-blue-800';
+  } else if (task.status === 'completed') {
+    statusBadge.textContent = '✅ HOÀN THÀNH';
+    statusClass = 'bg-green-100 text-green-800';
+  }
+
+  statusBadge.className = statusClass + ' text-sm font-semibold px-3 py-1 rounded-full';
+
+  let buttons = '';
+  if (task.status === 'pending') {
+    buttons = `
+      <button class="action-btn w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition" data-action="start">
+        <i class="fas fa-play mr-2"></i>BẮT ĐẦU KHÂU
+      </button>
+    `;
+  } else if (task.status === 'processing') {
+    buttons = `
+      <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded">
+        <p class="text-sm text-blue-900">Đang xử lý từ: <strong id="startTime"></strong></p>
+      </div>
+      <button class="action-btn w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition" data-action="complete">
+        <i class="fas fa-check mr-2"></i>HOÀN THÀNH
+      </button>
+    `;
+    if (task.start_time) {
+      setTimeout(() => {
+        const startTimeEl = document.getElementById('startTime');
+        if (startTimeEl) {
+          startTimeEl.textContent = new Date(task.start_time).toLocaleString('vi-VN');
+        }
+      }, 0);
+    }
+  } else if (task.status === 'completed') {
+    buttons = `
+      <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+        <p class="text-sm text-green-900"><i class="fas fa-check-circle mr-2"></i>Khâu này đã hoàn thành!</p>
+        <p class="text-xs text-green-800 mt-2">Hoàn thành lúc: <strong>${new Date(task.end_time).toLocaleString('vi-VN')}</strong></p>
+      </div>
+    `;
+  }
+
+  document.getElementById('actionButtons').innerHTML = buttons;
+  
+  // Reattach event listeners to new buttons
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('click', handleAction);
+  });
+  
+  scanMessage.classList.add('hidden');
+  productInfo.classList.remove('hidden');
+}
+
+async function startTask() {
+  if (!currentProduct) return;
+  try {
+    const response = await fetch('/scan/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: currentProduct.id })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      alert('✓ Khâu đã bắt đầu!');
+      location.reload();
+    } else {
+      alert('✗ ' + (data.error || 'Lỗi'));
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('✗ Lỗi server');
+  }
+}
+
+async function completeTask() {
+  if (!currentProduct) return;
+  try {
+    const response = await fetch('/scan/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: currentProduct.id })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      if (data.product.status === 'completed') {
+        alert('✓ Sản phẩm đã hoàn thành toàn bộ quy trình!');
+      } else {
+        alert('✓ Khâu hoàn thành! Sản phẩm chuyển sang khâu tiếp theo.');
+      }
+      location.reload();
+    } else {
+      alert('✗ ' + (data.error || 'Lỗi'));
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('✗ Lỗi server');
+  }
+}
+
+// Handle action button clicks
+function handleAction(e) {
+  const action = e.target.closest('.action-btn').getAttribute('data-action');
+  if (action === 'start') {
+    startTask();
+  } else if (action === 'complete') {
+    completeTask();
+  }
+}
+
+// Initialize event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  // Add event listeners to product items
+  document.querySelectorAll('.product-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const productCode = item.getAttribute('data-product-code');
+      if (productCode) {
+        scanProduct(productCode);
+      }
+    });
+  });
+
+  // Listen for input field changes
+  productCodeInput.addEventListener('change', () => {
+    const code = productCodeInput.value.trim();
+    if (code) {
+      scanProduct(code);
+    }
+  });
+
+  // Listen for Enter key
+  productCodeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const code = productCodeInput.value.trim();
+      if (code) {
+        scanProduct(code);
+      }
+    }
+  });
+});
+</script>
+
+<%- include('footer') %>

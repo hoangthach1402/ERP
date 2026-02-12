@@ -1,0 +1,314 @@
+<%- include('../header') %>
+
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-800">Bảng Điều Khiển Quản Trị</h1>
+</div>
+
+<!-- Delayed Tasks Alert -->
+<% if (delayedTasks && delayedTasks.length > 0) { %>
+  <div class="bg-red-50 border-l-4 border-red-500 p-6 mb-6 rounded-lg">
+    <div class="flex items-start">
+      <i class="fas fa-exclamation-circle text-3xl text-red-500 mr-4 mt-1"></i>
+      <div class="flex-1">
+        <h2 class="text-lg font-bold text-red-800 mb-2">⚠️ CẢNH BÁO: Có <%= delayedTasks.length %> khâu trễ hạn!</h2>
+        <div class="space-y-2">
+          <% delayedTasks.forEach(task => { %>
+            <div class="bg-red-100 p-3 rounded text-sm">
+              <p class="font-semibold text-red-900"><%= task.product_code %> - <%= task.stage_name %></p>
+              <p class="text-red-800">Người thực hiện: <strong><%= task.full_name %></strong></p>
+              <p class="text-red-700 text-xs">
+                Bắt đầu: <%= new Date(task.start_time).toLocaleString('vi-VN') %>
+                (Vượt quá <%= Math.floor((new Date() - new Date(task.start_time)) / (1000*60*60)) %>h / <%= task.norm_hours %>h định mức)
+              </p>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<!-- Tabs -->
+<div class="flex space-x-4 mb-6 border-b border-gray-200">
+  <button onclick="showTab('users')" id="usersTab" class="py-4 px-6 font-semibold text-purple-600 border-b-2 border-purple-600">
+    <i class="fas fa-users mr-2"></i>Người Dùng
+  </button>
+  <button onclick="showTab('settings')" id="settingsTab" class="py-4 px-6 font-semibold text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
+    <i class="fas fa-cog mr-2"></i>Cài Đặt
+  </button>
+</div>
+
+<!-- Users Tab -->
+<div id="usersTab-content" class="tab-content">
+  <!-- Create User Form -->
+  <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Tạo Người Dùng Mới</h2>
+    <form id="createUserForm" method="POST" action="/admin/user/create" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <input type="text" name="username" id="username" placeholder="Tên đăng nhập" required
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+      <input type="password" name="password" id="password" placeholder="Mật khẩu" required
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+      <input type="text" name="full_name" id="full_name" placeholder="Họ tên" required
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+      <input type="email" name="email" id="email" placeholder="Email"
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+      <select name="role" id="role" required
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <option value="">-- Chọn Vai Trò --</option>
+        <option value="RAP">Rập</option>
+        <option value="CAT">Cắt</option>
+        <option value="MAY">May</option>
+        <option value="THIET_KE">Thiết Kế Đắp</option>
+        <option value="DINH_KET">Đính Kết</option>
+        <option value="ADMIN">Admin</option>
+      </select>
+      <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition col-span-1 md:col-span-2 lg:col-span-4">
+        <i class="fas fa-user-plus mr-2"></i>Tạo Người Dùng
+      </button>
+    </form>
+  </div>
+
+  <!-- Users List -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-bold text-gray-800">Danh Sách Người Dùng</h2>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-100 border-b border-gray-200">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Tên Đăng Nhập</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Họ Tên</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Vai Trò</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Trạng Thái</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Hành Động</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (users && users.length > 0) { %>
+            <% users.forEach(user => { %>
+              <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
+                <td class="px-6 py-4 text-sm font-semibold text-gray-800"><%= user.username %></td>
+                <td class="px-6 py-4 text-sm text-gray-700"><%= user.full_name %></td>
+                <td class="px-6 py-4 text-sm text-gray-700"><%= user.email || '-' %></td>
+                <td class="px-6 py-4">
+                  <select onchange="updateUserRole(<%= user.id %>, this.value)" class="text-sm bg-white border border-gray-300 rounded px-2 py-1">
+                    <option value="RAP" <%= user.role === 'RAP' ? 'selected' : '' %>>Rập</option>
+                    <option value="CAT" <%= user.role === 'CAT' ? 'selected' : '' %>>Cắt</option>
+                    <option value="MAY" <%= user.role === 'MAY' ? 'selected' : '' %>>May</option>
+                    <option value="THIET_KE" <%= user.role === 'THIET_KE' ? 'selected' : '' %>>Thiết Kế</option>
+                    <option value="DINH_KET" <%= user.role === 'DINH_KET' ? 'selected' : '' %>>Đính Kết</option>
+                    <option value="ADMIN" <%= user.role === 'ADMIN' ? 'selected' : '' %>>Admin</option>
+                  </select>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="<%= user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %> text-xs font-semibold px-3 py-1 rounded-full">
+                    <%= user.status === 'active' ? 'Hoạt Động' : 'Vô Hiệu' %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm space-x-2">
+                  <% if (user.status === 'active') { %>
+                    <button onclick="deactivateUser(<%= user.id %>)" class="text-red-600 hover:text-red-800">
+                      <i class="fas fa-ban"></i>
+                    </button>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="6" class="px-6 py-8 text-center text-gray-500">Không có người dùng nào</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Tab -->
+<div id="settingsTab-content" class="tab-content hidden">
+  <div class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Cài Đặt Hệ Thống</h2>
+    <p class="text-gray-600 mb-4">Các cài đặt hệ thống sẽ được thêm vào phiên bản tiếp theo.</p>
+  </div>
+</div>
+
+<script>
+function showTab(tabName) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+  document.querySelectorAll('[id$="-content"]').forEach(tab => tab.classList.add('hidden'));
+  
+  // Show selected tab
+  const contentId = tabName === 'users' ? 'usersTab-content' : 'settingsTab-content';
+  document.getElementById(contentId).classList.remove('hidden');
+  
+  // Update tab buttons
+  document.getElementById('usersTab').classList.toggle('border-purple-600', tabName === 'users');
+  document.getElementById('usersTab').classList.toggle('border-transparent', tabName !== 'users');
+  document.getElementById('usersTab').classList.toggle('text-purple-600', tabName === 'users');
+  document.getElementById('usersTab').classList.toggle('text-gray-600', tabName !== 'users');
+  
+  document.getElementById('settingsTab').classList.toggle('border-purple-600', tabName === 'settings');
+  document.getElementById('settingsTab').classList.toggle('border-transparent', tabName !== 'settings');
+  document.getElementById('settingsTab').classList.toggle('text-purple-600', tabName === 'settings');
+  document.getElementById('settingsTab').classList.toggle('text-gray-600', tabName !== 'settings');
+}
+
+// Prevent form from being submitted via query parameters (security)
+document.addEventListener('DOMContentLoaded', function() {
+  // Check if URL contains query parameters with sensitive data
+  const urlParams = new URLSearchParams(window.location.search);
+  const sensitiveParams = ['password', 'token', 'secret', 'username'];
+  
+  for (let param of sensitiveParams) {
+    if (urlParams.has(param)) {
+      console.error('SECURITY WARNING: Detected sensitive data in URL');
+      window.location.href = window.location.pathname; // Remove query string
+      break;
+    }
+  }
+});
+
+document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const full_name = document.getElementById('full_name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const role = document.getElementById('role').value;
+
+  // Client-side validation
+  if (!username || !password || !full_name || !role) {
+    alert('✗ Vui lòng điền tất cả trường bắt buộc');
+    return;
+  }
+
+  if (username.length < 3 || username.length > 30) {
+    alert('✗ Tên đăng nhập phải từ 3-30 ký tự');
+    return;
+  }
+
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    alert('✗ Tên đăng nhập chỉ được chứa chữ, số, và dấu gạch dưới');
+    return;
+  }
+
+  if (password.length < 8) {
+    alert('✗ Mật khẩu phải có ít nhất 8 ký tự');
+    return;
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    alert('✗ Mật khẩu phải chứa ít nhất 1 chữ hoa');
+    return;
+  }
+
+  if (!/[a-z]/.test(password)) {
+    alert('✗ Mật khẩu phải chứa ít nhất 1 chữ thường');
+    return;
+  }
+
+  if (!/[0-9]/.test(password)) {
+    alert('✗ Mật khẩu phải chứa ít nhất 1 chữ số');
+    return;
+  }
+
+  if (full_name.length < 2) {
+    alert('✗ Họ tên phải từ 2 ký tự trở lên');
+    return;
+  }
+
+  // Show loading state
+  const submitButton = document.querySelector('#createUserForm button[type="submit"]');
+  const originalText = submitButton.innerHTML;
+  submitButton.disabled = true;
+  submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Đang tạo...';
+  
+  const formData = {
+    username,
+    password,
+    full_name,
+    email,
+    role
+  };
+
+  try {
+    const response = await fetch('/admin/user/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert('✓ Người dùng đã được tạo thành công!');
+      document.getElementById('createUserForm').reset();
+      document.getElementById('password').value = ''; // Clear password
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      alert('✗ ' + (data.error || 'Lỗi tạo người dùng'));
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalText;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('✗ Lỗi server. Vui lòng thử lại sau');
+    submitButton.disabled = false;
+    submitButton.innerHTML = originalText;
+  }
+});
+
+async function updateUserRole(userId, role) {
+  try {
+    const response = await fetch('/admin/user/update-role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, role })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert('✓ Cập nhật vai trò thành công!');
+      location.reload();
+    } else {
+      alert('✗ ' + (data.error || 'Lỗi cập nhật vai trò'));
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('✗ Lỗi server');
+  }
+}
+
+async function deactivateUser(userId) {
+  if (!confirm('Bạn có chắc chắn muốn vô hiệu hóa tài khoản này?')) return;
+
+  try {
+    const response = await fetch('/admin/user/deactivate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert('✓ Tài khoản đã được vô hiệu hóa!');
+      location.reload();
+    } else {
+      alert('✗ ' + (data.error || 'Lỗi vô hiệu hóa tài khoản'));
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('✗ Lỗi server');
+  }
+}
+</script>
+
+<%- include('../footer') %>
