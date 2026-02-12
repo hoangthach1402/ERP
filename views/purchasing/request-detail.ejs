@@ -71,11 +71,22 @@
   }
 </style>
 
+<script>
+  console.log('Page role:', '<%= role %>');
+</script>
+
 <div class="container mx-auto px-4 py-8">
-  <!-- Breadcrumb -->
+  <!-- Breadcrumb / Back Navigation -->
   <div class="mb-6 flex items-center gap-2 text-gray-600 text-sm">
-    <a href="/purchasing/dashboard" class="text-blue-600 hover:underline">Quản lý mua hàng</a>
-    <span>/</span>
+    <% if (role === 'THU_MUA' || role === 'ADMIN') { %>
+      <a href="/purchasing/dashboard" class="text-blue-600 hover:underline">Quản lý mua hàng</a>
+      <span>/</span>
+    <% } else { %>
+      <button onclick="window.location.href='/scan/page'; return false;" class="text-blue-600 hover:text-blue-800 font-semibold bg-none border-none cursor-pointer p-0" type="button">
+        ← Quay lại
+      </button>
+      <span>/</span>
+    <% } %>
     <span>Chi tiết yêu cầu #<%= request.id %></span>
   </div>
 
@@ -319,18 +330,6 @@
     </div>
   <% } %>
 
-  <!-- Back Button -->
-  <div class="mt-8">
-    <% if (role === 'THU_MUA' || role === 'ADMIN') { %>
-      <a href="/purchasing/dashboard" class="text-blue-600 hover:text-blue-800 font-semibold">
-        ← Quay lại danh sách
-      </a>
-    <% } else { %>
-      <a href="javascript:history.back()" class="text-blue-600 hover:text-blue-800 font-semibold">
-        ← Quay lại
-      </a>
-    <% } %>
-  </div>
 </div>
 
 <script>

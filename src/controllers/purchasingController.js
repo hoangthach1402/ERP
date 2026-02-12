@@ -171,7 +171,7 @@ export const getRequestDetail = async (req, res) => {
 
     res.render('purchasing/request-detail', {
       user: req.session.user,
-      role: req.user.role,
+      role: req.session.user?.role || req.user.role,
       request,
       messages
     });
