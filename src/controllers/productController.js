@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import { ProductStageTask } from '../models/Stage.js';
 import ActivityLog from '../models/ActivityLog.js';
+import { notifyNewProductRap } from '../services/telegramRapNotification.js';
 
 export const getDashboard = async (req, res) => {
   try {
@@ -113,6 +114,13 @@ export const createProduct = async (req, res) => {
       product_name: name,
       stageHours
     }, product.id);
+
+    // Send Telegram notification asynchronously (don't wait for it)
+    notifyNewProductRap({
+      product_code: code,
+      product_name: name,
+      stageHours
+    }).catch(err => console.error('Telegram notification error:', err));
 
     res.json({ success: true, product });
   } catch (error) {

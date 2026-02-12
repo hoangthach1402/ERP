@@ -14,6 +14,9 @@ services:
       - DB_PATH=/app/database/manufacturing.db
       - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
       - SESSION_SECRET=${SESSION_SECRET:-change_me_in_production}
+      - TELEGRAM_RAP_BOT_TOKEN=${TELEGRAM_RAP_BOT_TOKEN:-8278317654:AAFlydIUH0qRBSz30gVqLgV6NkAakjeeDBE}
+      - TELEGRAM_RAP_GROUP_ID=${TELEGRAM_RAP_GROUP_ID:--1003684379890}
+      - TELEGRAM_RAP_ENABLED=${TELEGRAM_RAP_ENABLED:-true}
     volumes:
       - ./src:/app/src
       - ./views:/app/views
