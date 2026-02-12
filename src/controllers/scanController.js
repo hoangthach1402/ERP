@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import { ProductStageTask, Stage } from '../models/Stage.js';
 import ActivityLog from '../models/ActivityLog.js';
+import MaterialRequest from '../models/MaterialRequest.js';
 import { notifyCompletedProductCat, notifyStartTaskCat, notifyPendingTaskCat } from '../services/telegramCatNotification.js';
 import { notifyCompletedProductMay, notifyStartTaskMay, notifyPendingTaskMay } from '../services/telegramMayNotification.js';
 import { notifyStartTaskRap, notifyPendingTaskRap } from '../services/telegramRapNotification.js';
@@ -20,22 +21,29 @@ export const getScanPage = async (req, res) => {
 
     const userStageId = roleToStage[userRole] || 0;
     let availableProducts = [];
+    let pendingRequests = [];
 
     // Get products in current stage (except ADMIN)
     if (userRole !== 'ADMIN' && userStageId) {
       try {
         availableProducts = await Product.getProductsByStage(userStageId) || [];
+        
+        // Get pending material requests for this stage
+        pendingRequests = await MaterialRequest.getAll({ stage_id: userStageId }) || [];
       } catch (error) {
         console.error('Error fetching products by stage:', error);
         availableProducts = [];
+        pendingRequests = [];
       }
     } else if (userRole === 'ADMIN') {
-      // Admin can see all products
+      // Admin can see all products and requests
       try {
         availableProducts = await Product.getAll() || [];
+        pendingRequests = await MaterialRequest.getAll() || [];
       } catch (error) {
         console.error('Error fetching all products:', error);
         availableProducts = [];
+        pendingRequests = [];
       }
     }
 
@@ -43,6 +51,7 @@ export const getScanPage = async (req, res) => {
       user: req.session.user,
       role: req.user.role,
       availableProducts: availableProducts,
+      pendingRequests: pendingRequests,
       userStageId: userStageId
     });
   } catch (error) {
@@ -269,6 +278,14 @@ export const setPendingTask = async (req, res) => {
     } else if (product.current_stage_id === 3) {
       notifyPendingTaskMay(taskData).catch(err => console.error('Telegram MAY pending error:', err));
     }
+
+    // Tạo material request cho thu mua
+    await MaterialRequest.create({
+      product_id: productId,
+      stage_id: product.current_stage_id,
+      requested_by_user_id: req.user.id,
+      reason: reason.trim()
+    });
 
     const updatedProduct = await Product.findById(productId);
 

@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import scanRoutes from './routes/scanRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import purchasingRoutes from './routes/purchasingRoutes.js';
 
 dotenv.config();
 
@@ -111,18 +112,13 @@ app.use((req, res, next) => {
 const dbPath = process.env.DB_PATH || './database/manufacturing.db';
 async function initializeDatabase() {
   try {
-    const dbExists = fs.existsSync(dbPath);
-    if (!dbExists) {
-      console.log('📊 Database not found, initializing...');
-      const { execSync } = await import('child_process');
-      execSync('node src/models/initDatabase.js', { 
-        stdio: 'inherit',
-        cwd: process.cwd()
-      });
-      console.log('✓ Database initialized successfully');
-    } else {
-      console.log('✓ Database already exists');
-    }
+    console.log('📊 Ensuring database schema is up-to-date...');
+    const { execSync } = await import('child_process');
+    execSync('node src/models/initDatabase.js', { 
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
+    console.log('✓ Database schema verified/initialized successfully');
   } catch (error) {
     console.error('⚠️ Database initialization warning:', error.message);
     console.log('Continuing anyway - database tables will be created on first use');
@@ -134,6 +130,7 @@ app.use('/', authRoutes);
 app.use('/product', productRoutes);
 app.use('/scan', scanRoutes);
 app.use('/admin', adminRoutes);
+app.use('/purchasing', purchasingRoutes);
 
 // Root redirect to login
 app.get('/', (req, res) => {

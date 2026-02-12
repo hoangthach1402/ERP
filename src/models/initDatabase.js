@@ -59,7 +59,7 @@ async function initializeDatabase() {
         password TEXT NOT NULL,
         full_name TEXT NOT NULL,
         email TEXT UNIQUE,
-        role TEXT NOT NULL CHECK(role IN ('RAP', 'CAT', 'MAY', 'THIET_KE', 'DINH_KET', 'ADMIN')),
+        role TEXT NOT NULL CHECK(role IN ('RAP', 'CAT', 'MAY', 'THIET_KE', 'DINH_KET', 'ADMIN', 'THU_MUA')),
         status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -127,6 +127,41 @@ async function initializeDatabase() {
       )
     `);
 
+    // Material Requests - yêu cầu mua nguyên vật liệu
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS material_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        stage_id INTEGER NOT NULL,
+        requested_by_user_id INTEGER NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'purchased', 'delivered')),
+        purchased_by_user_id INTEGER,
+        purchased_at DATETIME,
+        expected_delivery_date DATE,
+        delivered_at DATETIME,
+        response_note TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products(id),
+        FOREIGN KEY (stage_id) REFERENCES stages(id),
+        FOREIGN KEY (requested_by_user_id) REFERENCES users(id),
+        FOREIGN KEY (purchased_by_user_id) REFERENCES users(id)
+      )
+    `);
+
+    // Material Request Messages - tin nhắn chat trong yêu cầu
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS material_request_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        request_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (request_id) REFERENCES material_requests(id),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+
     console.log('✓ Tables created successfully');
 
     // Insert stages/công đoạn
@@ -158,6 +193,17 @@ async function initializeDatabase() {
         ['admin', hashedPassword, 'Administrator', 'admin@manufacturing.local', 'ADMIN', 'active']
       );
       console.log('✓ Default admin user created (username: admin, password: admin123)');
+    }
+
+    // Insert default purchasing user
+    const purchasingExists = await dbGet('SELECT id FROM users WHERE username = ?', ['thumua']);
+    if (!purchasingExists) {
+      const hashedPassword = await bcryptjs.hash('thumua123', 10);
+      await dbRun(
+        'INSERT INTO users (username, password, full_name, email, role, status) VALUES (?, ?, ?, ?, ?, ?)',
+        ['thumua', hashedPassword, 'Nhân viên Thu Mua', 'thumua@manufacturing.local', 'THU_MUA', 'active']
+      );
+      console.log('✓ Default purchasing user created (username: thumua, password: thumua123)');
     }
 
     console.log('✓ Database initialization completed');

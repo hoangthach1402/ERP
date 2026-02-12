@@ -134,8 +134,59 @@ export const notifyPendingTaskCat = async (taskData) => {
   }
 };
 
+/**
+ * Gửi thông báo phản hồi từ thu mua
+ * @param {Object} feedbackData - Dữ liệu phản hồi
+ * @returns {Promise<boolean>} True nếu thành công
+ */
+export const notifyPurchaseFeedbackCat = async (feedbackData) => {
+  if (!TELEGRAM_CAT_ENABLED) return false;
+  if (!TELEGRAM_CAT_BOT_TOKEN || !TELEGRAM_CAT_GROUP_ID) return false;
+
+  try {
+    const deliveryDate = feedbackData.expected_delivery_date 
+      ? new Date(feedbackData.expected_delivery_date).toLocaleDateString('vi-VN')
+      : 'Chưa xác định';
+
+    let messageTitle = '✅ Phản hồi từ bộ phận THU MUA';
+    if (feedbackData.response_note === 'Đã giao hàng') {
+      messageTitle = '📦 Nguyên liệu đã giao';
+    }
+      
+    let message = `<b>${messageTitle}</b>
+
+<b>Mã sản phẩm:</b> <code>${feedbackData.product_code}</code>
+<b>Tên sản phẩm:</b> ${feedbackData.product_name}
+<b>Người mua:</b> ${feedbackData.purchaser_name || 'Chưa xác định'}
+<b>Ngày dự kiến về:</b> ${deliveryDate}
+<b>Ghi chú:</b> ${feedbackData.response_note || 'Không có'}`;
+
+    if (feedbackData.user_name && feedbackData.role) {
+      message += `\n<b>Người cập nhật:</b> ${feedbackData.user_name} (${feedbackData.role})`;
+    }
+    
+    message += `\n<b>Thời gian:</b> ${new Date().toLocaleString('vi-VN')}`;
+    
+    const response = await axios.post(
+      `https://api.telegram.org/bot${TELEGRAM_CAT_BOT_TOKEN}/sendMessage`,
+      { chat_id: TELEGRAM_CAT_GROUP_ID, text: message, parse_mode: 'HTML' },
+      { timeout: 10000 }
+    );
+
+    if (response.data.ok) {
+      console.log('✓ Telegram CAT feedback sent');
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error sending Telegram CAT feedback:', error.message);
+    return false;
+  }
+};
+
 export default {
   notifyCompletedProductCat,
   notifyStartTaskCat,
-  notifyPendingTaskCat
+  notifyPendingTaskCat,
+  notifyPurchaseFeedbackCat
 };

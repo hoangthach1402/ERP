@@ -94,6 +94,47 @@
 
   <!-- Quick Stats -->
   <div>
+    <!-- Pending Material Requests -->
+    <% if (pendingRequests && pendingRequests.length > 0) { %>
+      <div class="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-red-500">
+        <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <span class="text-red-600 mr-2">⚠️</span> Yêu Cầu Thiếu (<%= pendingRequests.length %>)
+        </h2>
+        <div class="space-y-3">
+          <% pendingRequests.forEach(req => { %>
+            <div 
+              class="p-3 border border-red-100 rounded-lg bg-red-50 text-sm cursor-pointer hover:shadow-md hover:bg-red-100 transition"
+              onclick="<% if (user.role !== 'THU_MUA') { %>window.location='/purchasing/request/<%= req.id %>'<% } %>"
+            >
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <p class="font-semibold text-gray-800"><%= req.product_code %></p>
+                  <p class="text-xs text-gray-600"><%= req.reason %></p>
+                </div>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-gray-500"><%= req.stage_name %></span>
+                <div class="space-x-1">
+                  <% if (req.status === 'purchased' && req.expected_delivery_date) { %>
+                    <span class="px-2 py-1 rounded bg-indigo-100 text-indigo-700 font-semibold">
+                      📅 <%= new Date(req.expected_delivery_date).toLocaleDateString('vi-VN') %>
+                    </span>
+                  <% } %>
+                  <% if (req.status === 'pending') { %>
+                    <span class="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold">⏳</span>
+                  <% } else if (req.status === 'purchased') { %>
+                    <span class="px-2 py-1 rounded-full bg-green-100 text-green-800 font-semibold">✓</span>
+                  <% } else if (req.status === 'delivered') { %>
+                    <span class="px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-semibold">📦</span>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
     <div class="bg-white rounded-lg shadow p-6">
       <h2 class="text-lg font-bold text-gray-800 mb-4">Thông Tin Công Nhân</h2>
       <div class="space-y-4">

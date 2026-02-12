@@ -55,4 +55,8 @@ export const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
 };
 
-export default { authenticateToken, authorizeRole, generateToken };
+// Aliases for backward compatibility
+export const isAuthenticated = authenticateToken;
+export const hasRole = authorizeRole;
+
+export default { authenticateToken, authorizeRole, generateToken, isAuthenticated, hasRole };

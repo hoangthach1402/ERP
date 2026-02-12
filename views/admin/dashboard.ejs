@@ -60,6 +60,7 @@
         <option value="MAY">May</option>
         <option value="THIET_KE">Thiết Kế Đắp</option>
         <option value="DINH_KET">Đính Kết</option>
+        <option value="THU_MUA">Thu Mua</option>
         <option value="ADMIN">Admin</option>
       </select>
       <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition col-span-1 md:col-span-2 lg:col-span-4">
@@ -100,6 +101,7 @@
                     <option value="MAY" <%= user.role === 'MAY' ? 'selected' : '' %>>May</option>
                     <option value="THIET_KE" <%= user.role === 'THIET_KE' ? 'selected' : '' %>>Thiết Kế</option>
                     <option value="DINH_KET" <%= user.role === 'DINH_KET' ? 'selected' : '' %>>Đính Kết</option>
+                    <option value="THU_MUA" <%= user.role === 'THU_MUA' ? 'selected' : '' %>>Thu Mua</option>
                     <option value="ADMIN" <%= user.role === 'ADMIN' ? 'selected' : '' %>>Admin</option>
                   </select>
                 </td>

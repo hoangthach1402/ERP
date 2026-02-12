@@ -1,0 +1,211 @@
+<%- include('../header', { title: 'Dashboard Thu Mua' }) %>
+
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold mb-6">Dashboard Thu Mua - Quản Lý Nguyên Vật Liệu</h1>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-yellow-100 p-6 rounded-lg shadow">
+      <div class="text-yellow-800 text-sm font-semibold">Chờ Xử Lý</div>
+      <div class="text-3xl font-bold"><%= stats.pending %></div>
+    </div>
+    <div class="bg-blue-100 p-6 rounded-lg shadow">
+      <div class="text-blue-800 text-sm font-semibold">Đã Mua</div>
+      <div class="text-3xl font-bold"><%= stats.purchased %></div>
+    </div>
+    <div class="bg-green-100 p-6 rounded-lg shadow">
+      <div class="text-green-800 text-sm font-semibold">Đã Giao</div>
+      <div class="text-3xl font-bold"><%= stats.delivered %></div>
+    </div>
+    <div class="bg-gray-100 p-6 rounded-lg shadow">
+      <div class="text-gray-800 text-sm font-semibold">Tổng</div>
+      <div class="text-3xl font-bold"><%= stats.total %></div>
+    </div>
+  </div>
+
+  <!-- Pending Requests -->
+  <div class="bg-white rounded-lg shadow mb-8">
+    <div class="px-6 py-4 border-b">
+      <h2 class="text-xl font-semibold text-red-600">⚠️ Yêu Cầu Đang Chờ Xử Lý</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã SP</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tên SP</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bộ Phận</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lý Do</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Người Yêu Cầu</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thời Gian</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hành Động</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% if (pendingRequests.length === 0) { %>
+            <tr>
+              <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                Không có yêu cầu nào đang chờ xử lý
+              </td>
+            </tr>
+          <% } else { %>
+            <% pendingRequests.forEach(request => { %>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap font-mono text-sm">
+                  <a href="/purchasing/request/<%= request.id %>" class="text-blue-600 hover:text-blue-800 hover:underline">
+                    <%= request.product_code %>
+                  </a>
+                </td>
+                <td class="px-6 py-4">
+                  <a href="/purchasing/request/<%= request.id %>" class="text-blue-600 hover:text-blue-800 hover:underline">
+                    <%= request.product_name %>
+                  </a>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="px-2 py-1 text-xs rounded-full <%= request.stage_name === 'RẬP' ? 'bg-blue-100 text-blue-800' : request.stage_name === 'CẮT' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800' %>">
+                    <%= request.stage_name %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm"><%= request.reason %></td>
+                <td class="px-6 py-4 text-sm"><%= request.requested_by_name %></td>
+                <td class="px-6 py-4 text-sm text-gray-500"><%= new Date(request.created_at).toLocaleString('vi-VN') %></td>
+                <td class="px-6 py-4">
+                  <button onclick="confirmPurchase(<%= request.id %>)" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">
+                    Xác Nhận Mua
+                  </button>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- All Requests History -->
+  <div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b">
+      <h2 class="text-xl font-semibold">📋 Lịch Sử Yêu Cầu</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã SP</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bộ Phận</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lý Do</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng Thái</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Người Mua</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày Dự Kiến</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% if (allRequests.length === 0) { %>
+            <tr>
+              <td colspan="6" class="px-6 py-4 text-center text-gray-500">Chưa có yêu cầu nào</td>
+            </tr>
+          <% } else { %>
+            <% allRequests.slice(0, 20).forEach(request => { %>
+              <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='/purchasing/request/<%= request.id %>'">
+                <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  <%= request.product_code %>
+                </td>
+                <td class="px-6 py-4 text-sm"><%= request.stage_name %></td>
+                <td class="px-6 py-4 text-sm"><%= request.reason %></td>
+                <td class="px-6 py-4">
+                  <span class="px-2 py-1 text-xs rounded-full <%= request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : request.status === 'purchased' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' %>">
+                    <%= request.status === 'pending' ? 'Chờ' : request.status === 'purchased' ? 'Đã Mua' : 'Đã Giao' %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm"><%= request.purchased_by_name || '-' %></td>
+                <td class="px-6 py-4 text-sm">
+                  <% if (request.expected_delivery_date) { %>
+                    <span class="px-3 py-1 rounded text-xs font-semibold bg-indigo-100 text-indigo-700">
+                      <%= new Date(request.expected_delivery_date).toLocaleDateString('vi-VN') %>
+                    </span>
+                  <% } else { %>
+                    <span class="text-gray-400">-</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal xác nhận mua -->
+<div id="purchaseModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <h3 class="text-lg font-semibold mb-4">Xác Nhận Đã Mua Nguyên Vật Liệu</h3>
+    <form id="purchaseForm">
+      <input type="hidden" id="requestId" name="requestId">
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">Ngày Dự Kiến Giao Hàng *</label>
+        <input type="date" id="expectedDeliveryDate" name="expected_delivery_date" required
+               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">Ghi Chú</label>
+        <textarea id="responseNote" name="response_note" rows="3"
+                  class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Thông tin bổ sung..."></textarea>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+          Xác Nhận
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function confirmPurchase(requestId) {
+  document.getElementById('requestId').value = requestId;
+  document.getElementById('purchaseModal').classList.remove('hidden');
+  
+  // Set minimum date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('expectedDeliveryDate').setAttribute('min', today);
+}
+
+function closeModal() {
+  document.getElementById('purchaseModal').classList.add('hidden');
+  document.getElementById('purchaseForm').reset();
+}
+
+document.getElementById('purchaseForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData);
+  
+  try {
+    const response = await fetch('/purchasing/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      alert('Đã xác nhận mua nguyên vật liệu thành công!');
+      location.reload();
+    } else {
+      alert(result.error || 'Có lỗi xảy ra');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Lỗi kết nối');
+  }
+});
+</script>
+
+<%- include('../footer') %>
