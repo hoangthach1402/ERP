@@ -42,11 +42,20 @@ export const getProductDetail = async (req, res) => {
 
     const tasks = await ProductStageTask.getTasksByProduct(productId);
     const logs = await ActivityLog.getByProduct(productId);
+    const parsedLogs = logs.map(log => {
+      let details = null;
+      try {
+        details = log.details ? JSON.parse(log.details) : null;
+      } catch (parseError) {
+        details = null;
+      }
+      return { ...log, details }; 
+    });
 
     res.render('product-detail', {
       product,
       tasks,
-      logs,
+      logs: parsedLogs,
       user: req.session.user,
       role: req.user.role
     });

@@ -184,9 +184,57 @@ export const completeTask = async (req, res) => {
   }
 };
 
+export const setPendingTask = async (req, res) => {
+  try {
+    const { productId, reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'Vui lòng nhập lý do thiếu nguyên liệu' });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const currentTask = await ProductStageTask.findByProductAndStage(product.id, product.current_stage_id);
+    if (!currentTask) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    if (currentTask.status === 'completed') {
+      return res.status(400).json({ error: 'Task already completed' });
+    }
+
+    const updatedTask = await ProductStageTask.setPending(currentTask.id, req.user.id, reason.trim());
+    await Product.updateStatus(productId, 'pending');
+
+    await ActivityLog.log(
+      req.user.id,
+      'PENDING_MATERIAL',
+      { stage: product.stage_name, reason: reason.trim() },
+      productId,
+      product.current_stage_id
+    );
+
+    const updatedProduct = await Product.findById(productId);
+
+    res.json({
+      success: true,
+      message: 'Đã cập nhật trạng thái chờ nguyên liệu',
+      product: updatedProduct,
+      task: updatedTask
+    });
+  } catch (error) {
+    console.error('Set pending task error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export default {
   getScanPage,
   scanProduct,
   startTask,
-  completeTask
+  completeTask,
+  setPendingTask
 };

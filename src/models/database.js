@@ -66,18 +66,21 @@ async function initializeTables() {
 
     if (usersTableExists) {
       console.log('✓ Database tables already exist');
-      
-      // Check if norm_hours column exists in product_stage_tasks
-      const normHoursExists = await dbGet(
-        "PRAGMA table_info(product_stage_tasks)" 
-      );
-      const hasNormHours = normHoursExists && 
-        (await dbAll("PRAGMA table_info(product_stage_tasks)")).some(col => col.name === 'norm_hours');
-      
+
+      const taskColumns = await dbAll("PRAGMA table_info(product_stage_tasks)");
+      const hasNormHours = taskColumns.some(col => col.name === 'norm_hours');
+      const hasPendingReason = taskColumns.some(col => col.name === 'pending_reason');
+
       if (!hasNormHours) {
         console.log('🔧 Adding norm_hours column to product_stage_tasks...');
         await dbRun('ALTER TABLE product_stage_tasks ADD COLUMN norm_hours INTEGER DEFAULT 0');
         console.log('✓ norm_hours column added');
+      }
+
+      if (!hasPendingReason) {
+        console.log('🔧 Adding pending_reason column to product_stage_tasks...');
+        await dbRun('ALTER TABLE product_stage_tasks ADD COLUMN pending_reason TEXT');
+        console.log('✓ pending_reason column added');
       }
       
       // Ensure admin user exists
@@ -134,6 +137,7 @@ async function initializeTables() {
         product_id INTEGER NOT NULL,
         stage_id INTEGER NOT NULL,
         norm_hours INTEGER DEFAULT 0,
+        pending_reason TEXT,
         assigned_user_id INTEGER,
         start_time DATETIME,
         end_time DATETIME,

@@ -61,7 +61,7 @@ export class ProductStageTask {
 
   static async startTask(taskId, userId) {
     await dbRun(
-      'UPDATE product_stage_tasks SET start_time = CURRENT_TIMESTAMP, status = ?, assigned_user_id = ? WHERE id = ?',
+      'UPDATE product_stage_tasks SET start_time = CURRENT_TIMESTAMP, status = ?, assigned_user_id = ?, pending_reason = NULL WHERE id = ?',
       ['processing', userId, taskId]
     );
 
@@ -72,6 +72,15 @@ export class ProductStageTask {
     await dbRun(
       'UPDATE product_stage_tasks SET end_time = CURRENT_TIMESTAMP, status = ? WHERE id = ?',
       ['completed', taskId]
+    );
+
+    return this.findById(taskId);
+  }
+
+  static async setPending(taskId, userId, reason) {
+    await dbRun(
+      'UPDATE product_stage_tasks SET status = ?, pending_reason = ?, assigned_user_id = ?, start_time = NULL, end_time = NULL, is_delayed = 0 WHERE id = ?',
+      ['pending', reason, userId, taskId]
     );
 
     return this.findById(taskId);

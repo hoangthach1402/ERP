@@ -97,6 +97,7 @@ async function initializeDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER NOT NULL,
         stage_id INTEGER NOT NULL,
+        pending_reason TEXT,
         assigned_user_id INTEGER,
         start_time DATETIME,
         end_time DATETIME,

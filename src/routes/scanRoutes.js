@@ -8,5 +8,6 @@ router.get('/page', authenticateToken, scanController.getScanPage);
 router.post('/scan', authenticateToken, scanController.scanProduct);
 router.post('/start', authenticateToken, scanController.startTask);
 router.post('/complete', authenticateToken, scanController.completeTask);
+router.post('/pending', authenticateToken, scanController.setPendingTask);
 
 export default router;
