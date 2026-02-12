@@ -63,7 +63,78 @@ const formatProductNotification = (productData) => {
 <b>Thời gian:</b> ${new Date().toLocaleString('vi-VN')}`;
 };
 
+/**
+ * Gửi thông báo khi BP RẬP bắt đầu nhận việc
+ * @param {Object} taskData - Dữ liệu task
+ * @returns {Promise<boolean>} True nếu thành công
+ */
+export const notifyStartTaskRap = async (taskData) => {
+  if (!TELEGRAM_RAP_ENABLED) return false;
+  if (!TELEGRAM_RAP_BOT_TOKEN || !TELEGRAM_RAP_GROUP_ID) return false;
+
+  try {
+    const message = `<b>🔧 BP RẬP - Bắt đầu làm việc</b>
+
+<b>Mã sản phẩm:</b> <code>${taskData.product_code}</code>
+<b>Tên sản phẩm:</b> ${taskData.product_name}
+<b>Người thực hiện:</b> ${taskData.user_name}
+<b>Thời gian:</b> ${new Date().toLocaleString('vi-VN')}`;
+    
+    const response = await axios.post(
+      `https://api.telegram.org/bot${TELEGRAM_RAP_BOT_TOKEN}/sendMessage`,
+      { chat_id: TELEGRAM_RAP_GROUP_ID, text: message, parse_mode: 'HTML' },
+      { timeout: 10000 }
+    );
+
+    if (response.data.ok) {
+      console.log('✓ Telegram RAP start notification sent');
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error sending Telegram RAP start notification:', error.message);
+    return false;
+  }
+};
+
+/**
+ * Gửi thông báo khi BP RẬP chờ nguyên liệu
+ * @param {Object} taskData - Dữ liệu task
+ * @returns {Promise<boolean>} True nếu thành công
+ */
+export const notifyPendingTaskRap = async (taskData) => {
+  if (!TELEGRAM_RAP_ENABLED) return false;
+  if (!TELEGRAM_RAP_BOT_TOKEN || !TELEGRAM_RAP_GROUP_ID) return false;
+
+  try {
+    const message = `<b>⏸️ BP RẬP - Chờ nguyên liệu</b>
+
+<b>Mã sản phẩm:</b> <code>${taskData.product_code}</code>
+<b>Tên sản phẩm:</b> ${taskData.product_name}
+<b>Người báo:</b> ${taskData.user_name}
+<b>Lý do:</b> ${taskData.reason}
+<b>Thời gian:</b> ${new Date().toLocaleString('vi-VN')}`;
+    
+    const response = await axios.post(
+      `https://api.telegram.org/bot${TELEGRAM_RAP_BOT_TOKEN}/sendMessage`,
+      { chat_id: TELEGRAM_RAP_GROUP_ID, text: message, parse_mode: 'HTML' },
+      { timeout: 10000 }
+    );
+
+    if (response.data.ok) {
+      console.log('✓ Telegram RAP pending notification sent');
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error sending Telegram RAP pending notification:', error.message);
+    return false;
+  }
+};
+
 export default {
-  notifyNewProductRap
+  notifyNewProductRap,
+  notifyStartTaskRap,
+  notifyPendingTaskRap
 };
 

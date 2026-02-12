@@ -65,6 +65,77 @@ const formatProductCompletionNotification = (productData) => {
 <i>Sản phẩm đã hoàn thành khâu RẬP</i>`;
 };
 
+/**
+ * Gửi thông báo khi BP CẮT bắt đầu nhận việc
+ * @param {Object} taskData - Dữ liệu task
+ * @returns {Promise<boolean>} True nếu thành công
+ */
+export const notifyStartTaskCat = async (taskData) => {
+  if (!TELEGRAM_CAT_ENABLED) return false;
+  if (!TELEGRAM_CAT_BOT_TOKEN || !TELEGRAM_CAT_GROUP_ID) return false;
+
+  try {
+    const message = `<b>🔧 BP CẮT - Bắt đầu làm việc</b>
+
+<b>Mã sản phẩm:</b> <code>${taskData.product_code}</code>
+<b>Tên sản phẩm:</b> ${taskData.product_name}
+<b>Người thực hiện:</b> ${taskData.user_name}
+<b>Thời gian:</b> ${new Date().toLocaleString('vi-VN')}`;
+    
+    const response = await axios.post(
+      `https://api.telegram.org/bot${TELEGRAM_CAT_BOT_TOKEN}/sendMessage`,
+      { chat_id: TELEGRAM_CAT_GROUP_ID, text: message, parse_mode: 'HTML' },
+      { timeout: 10000 }
+    );
+
+    if (response.data.ok) {
+      console.log('✓ Telegram CAT start notification sent');
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error sending Telegram CAT start notification:', error.message);
+    return false;
+  }
+};
+
+/**
+ * Gửi thông báo khi BP CẮT chờ nguyên liệu
+ * @param {Object} taskData - Dữ liệu task
+ * @returns {Promise<boolean>} True nếu thành công
+ */
+export const notifyPendingTaskCat = async (taskData) => {
+  if (!TELEGRAM_CAT_ENABLED) return false;
+  if (!TELEGRAM_CAT_BOT_TOKEN || !TELEGRAM_CAT_GROUP_ID) return false;
+
+  try {
+    const message = `<b>⏸️ BP CẮT - Chờ nguyên liệu</b>
+
+<b>Mã sản phẩm:</b> <code>${taskData.product_code}</code>
+<b>Tên sản phẩm:</b> ${taskData.product_name}
+<b>Người báo:</b> ${taskData.user_name}
+<b>Lý do:</b> ${taskData.reason}
+<b>Thời gian:</b> ${new Date().toLocaleString('vi-VN')}`;
+    
+    const response = await axios.post(
+      `https://api.telegram.org/bot${TELEGRAM_CAT_BOT_TOKEN}/sendMessage`,
+      { chat_id: TELEGRAM_CAT_GROUP_ID, text: message, parse_mode: 'HTML' },
+      { timeout: 10000 }
+    );
+
+    if (response.data.ok) {
+      console.log('✓ Telegram CAT pending notification sent');
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error sending Telegram CAT pending notification:', error.message);
+    return false;
+  }
+};
+
 export default {
-  notifyCompletedProductCat
+  notifyCompletedProductCat,
+  notifyStartTaskCat,
+  notifyPendingTaskCat
 };

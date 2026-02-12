@@ -1,7 +1,9 @@
 import Product from '../models/Product.js';
 import { ProductStageTask, Stage } from '../models/Stage.js';
 import ActivityLog from '../models/ActivityLog.js';
-import { notifyCompletedProductCat } from '../services/telegramCatNotification.js';
+import { notifyCompletedProductCat, notifyStartTaskCat, notifyPendingTaskCat } from '../services/telegramCatNotification.js';
+import { notifyCompletedProductMay, notifyStartTaskMay, notifyPendingTaskMay } from '../services/telegramMayNotification.js';
+import { notifyStartTaskRap, notifyPendingTaskRap } from '../services/telegramRapNotification.js';
 
 export const getScanPage = async (req, res) => {
   try {
@@ -130,6 +132,21 @@ export const startTask = async (req, res) => {
       product.current_stage_id
     );
 
+    // Send notification when starting task
+    const taskData = {
+      product_code: product.product_code,
+      product_name: product.product_name,
+      user_name: req.user.full_name || req.user.username
+    };
+
+    if (product.current_stage_id === 1) {
+      notifyStartTaskRap(taskData).catch(err => console.error('Telegram RAP start error:', err));
+    } else if (product.current_stage_id === 2) {
+      notifyStartTaskCat(taskData).catch(err => console.error('Telegram CAT start error:', err));
+    } else if (product.current_stage_id === 3) {
+      notifyStartTaskMay(taskData).catch(err => console.error('Telegram MAY start error:', err));
+    }
+
     const updatedProduct = await Product.findById(productId);
 
     res.json({ 
@@ -185,6 +202,14 @@ export const completeTask = async (req, res) => {
       }).catch(err => console.error('Telegram CAT notification error:', err));
     }
 
+    // Send notification to BP MAY when CẮT (stage 2) is completed
+    if (completedStageId === 2 && nextProduct.current_stage_id === 3) {
+      notifyCompletedProductMay({
+        product_code: nextProduct.product_code,
+        product_name: nextProduct.product_name
+      }).catch(err => console.error('Telegram MAY notification error:', err));
+    }
+
     res.json({
       success: true,
       message: nextProduct.status === 'completed' ? 'Product completed!' : 'Moved to next stage',
@@ -228,6 +253,22 @@ export const setPendingTask = async (req, res) => {
       productId,
       product.current_stage_id
     );
+
+    // Send notification when task is pending
+    const taskData = {
+      product_code: product.product_code,
+      product_name: product.product_name,
+      user_name: req.user.full_name || req.user.username,
+      reason: reason.trim()
+    };
+
+    if (product.current_stage_id === 1) {
+      notifyPendingTaskRap(taskData).catch(err => console.error('Telegram RAP pending error:', err));
+    } else if (product.current_stage_id === 2) {
+      notifyPendingTaskCat(taskData).catch(err => console.error('Telegram CAT pending error:', err));
+    } else if (product.current_stage_id === 3) {
+      notifyPendingTaskMay(taskData).catch(err => console.error('Telegram MAY pending error:', err));
+    }
 
     const updatedProduct = await Product.findById(productId);
 
