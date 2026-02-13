@@ -1,11 +1,12 @@
 import express from 'express';
-import { isAuthenticated, hasRole } from '../middleware/auth.js';
+import { isAuthenticated, hasRole, authenticateToken } from '../middleware/auth.js';
 import {
   getPurchasingDashboard,
   confirmPurchase,
   markAsDelivered,
   getRequestDetail,
-  sendMessage
+  sendMessage,
+  createRequest
 } from '../controllers/purchasingController.js';
 
 const router = express.Router();
@@ -18,6 +19,9 @@ router.post('/confirm', isAuthenticated, hasRole('THU_MUA', 'ADMIN'), confirmPur
 
 // Đánh dấu đã giao hàng - yêu cầu role THU_MUA hoặc ADMIN
 router.post('/delivered', isAuthenticated, hasRole('THU_MUA', 'ADMIN'), markAsDelivered);
+
+// Tạo yêu cầu vật liệu từ worker dashboard
+router.post('/request/create', authenticateToken, createRequest);
 
 // Xem chi tiết yêu cầu
 router.get('/request/:requestId', isAuthenticated, getRequestDetail);

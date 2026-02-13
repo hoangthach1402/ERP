@@ -14,6 +14,7 @@ import productRoutes from './routes/productRoutes.js';
 import scanRoutes from './routes/scanRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import purchasingRoutes from './routes/purchasingRoutes.js';
+import workflowRoutes from './routes/workflowRoutes.js';
 
 dotenv.config();
 
@@ -131,6 +132,7 @@ app.use('/product', productRoutes);
 app.use('/scan', scanRoutes);
 app.use('/admin', adminRoutes);
 app.use('/purchasing', purchasingRoutes);
+app.use('/workflow', workflowRoutes);
 
 // Root redirect to login
 app.get('/', (req, res) => {

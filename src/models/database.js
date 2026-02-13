@@ -192,6 +192,52 @@ async function initializeTables() {
       ['admin', hashedPassword, 'Administrator', 'admin@manufacturing.local', 'ADMIN', 'active']
     );
     console.log('✓ Admin user created (username: admin, password: admin123)');
+    
+    // Create multi-stage/multi-worker tables
+    console.log('🔧 Creating multi-stage and multi-worker tables...');
+    
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS product_active_stages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        stage_id INTEGER NOT NULL,
+        status TEXT DEFAULT 'active',
+        started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        completed_at DATETIME,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        FOREIGN KEY (stage_id) REFERENCES stages(id),
+        UNIQUE(product_id, stage_id)
+      )
+    `);
+    
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS product_stage_workers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        stage_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        status TEXT DEFAULT 'assigned',
+        start_time DATETIME,
+        end_time DATETIME,
+        hours_worked REAL DEFAULT 0,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        FOREIGN KEY (stage_id) REFERENCES stages(id),
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        UNIQUE(product_id, stage_id, user_id)
+      )
+    `);
+    
+    // Create indexes
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_pas_product ON product_active_stages(product_id)');
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_pas_stage ON product_active_stages(stage_id)');
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_pas_status ON product_active_stages(status)');
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_psw_product_stage ON product_stage_workers(product_id, stage_id)');
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_psw_user ON product_stage_workers(user_id)');
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_psw_status ON product_stage_workers(status)');
+    
+    console.log('✓ Multi-stage and multi-worker tables created');
     console.log('✅ Database initialization completed!');
   } catch (error) {
     console.error('❌ Database error:', error.message);

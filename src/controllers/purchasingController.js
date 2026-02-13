@@ -236,10 +236,63 @@ export const sendMessage = async (req, res) => {
   }
 };
 
+/**
+ * Tạo yêu cầu vật liệu mới từ worker dashboard
+ */
+export const createRequest = async (req, res) => {
+  try {
+    const { productId, stage, materials, quantity, urgency, notes } = req.body;
+
+    if (!productId || !stage || !materials) {
+      return res.status(400).json({ error: 'Product ID, stage, và materials là bắt buộc' });
+    }
+
+    // Map stage name to stage_id
+    const stageMap = {
+      'RẬP': 1,
+      'CẮT': 2,
+      'MAY': 3,
+      'THIẾT_KẾ': 4,
+      'ĐÍNH_KẾT': 5
+    };
+
+    const stageId = stageMap[stage] || parseInt(stage) || null;
+    if (!stageId) {
+      return res.status(400).json({ error: 'Invalid stage' });
+    }
+
+    // Build reason string
+    const reason = `${materials}${quantity ? ` (Qty: ${quantity})` : ''}${urgency ? `, Urgency: ${urgency}` : ''}${notes ? `, Notes: ${notes}` : ''}`;
+
+    // Create material request
+    const request = await MaterialRequest.create({
+      product_id: productId,
+      stage_id: stageId,
+      requested_by_user_id: req.user.id,
+      reason
+    });
+
+    // Log activity
+    await ActivityLog.log(
+      req.user.id,
+      'MATERIAL_REQUEST_CREATED',
+      { product_id: productId, stage_id: stageId, materials, quantity, urgency },
+      productId,
+      stageId
+    );
+
+    res.json({ success: true, data: request });
+  } catch (error) {
+    console.error('Create request error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export default {
   getPurchasingDashboard,
   confirmPurchase,
   markAsDelivered,
   getRequestDetail,
-  sendMessage
+  sendMessage,
+  createRequest
 };

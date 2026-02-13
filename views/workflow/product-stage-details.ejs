@@ -1,0 +1,555 @@
+<%- include('../header') %>
+
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-center">
+      <div>
+        <a href="/workflow/multi-stage-dashboard" class="text-indigo-600 hover:text-indigo-900 flex items-center mb-2">
+          <i class="fas fa-arrow-left mr-2"></i>Quay lại Dashboard
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900" id="productTitle">Product Details</h1>
+        <p class="mt-2 text-sm text-gray-600" id="productName">Xem chi tiết tiến độ từng bộ phận</p>
+      </div>
+    </div>
+
+    <!-- Department Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-sm font-medium text-gray-500">Tổng Giờ Làm</h3>
+            <p class="text-2xl font-semibold text-gray-900" id="totalHours">0h</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-sm font-medium text-gray-500">Hoàn Thành</h3>
+            <p class="text-2xl font-semibold text-gray-900" id="completedCount">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-sm font-medium text-gray-500">Tổng Workers</h3>
+            <p class="text-2xl font-semibold text-gray-900" id="totalWorkers">0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overall Progress Chart -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div class="col-span-1 lg:col-span-2 bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Tiến Độ Từng Bộ Phận (Department)</h2>
+        <div id="departmentStats" class="space-y-4">
+          <!-- Department stats will be loaded here -->
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6 flex flex-col justify-center">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Biểu Đồ Tiến Độ Chung</h3>
+        <div style="width: 200px; height: 200px; margin: 0 auto;">
+          <canvas id="progressChart"></canvas>
+        </div>
+        <div id="chartLegend" class="mt-4 text-sm space-y-1">
+          <!-- Legend will be populated -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Stages Details -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900">Chi Tiết Các Bộ Phận (Stages)</h2>
+      </div>
+
+      <div id="stagesContainer" class="divide-y">
+        <!-- Stages will be loaded here -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Edit Norm Hours Modal -->
+<div id="editNormHoursModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold text-gray-900">Chỉnh Sửa Định Mức</h3>
+      <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+    </div>
+
+    <form id="editNormHoursForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Bộ Phận</label>
+        <input type="text" id="editStageName" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100" readonly>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Định Mức Giờ (h)</label>
+        <input type="number" id="editNormHoursInput" name="norm_hours" min="1" step="0.5" required
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+      </div>
+
+      <div class="flex justify-end space-x-3 pt-4">
+        <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+          <i class="fas fa-save mr-2"></i>Lưu
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<script>
+const authToken = '<%= typeof token !== "undefined" ? token : "" %>';
+const userRole = '<%= typeof user !== "undefined" && user.role ? user.role : "" %>';
+const productId = new URLSearchParams(window.location.search).get('id') || '<%= typeof productId !== "undefined" ? productId : "" %>';
+
+let currentEditData = { productId: null, stageId: null };
+let allStagesData = [];
+let allDepartmentStats = [];
+
+// Wait for Chart.js to load
+function waitForChartJs(timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    const checkInterval = setInterval(() => {
+      if (window.Chart) {
+        clearInterval(checkInterval);
+        resolve();
+      } else if (Date.now() - startTime > timeout) {
+        clearInterval(checkInterval);
+        reject(new Error('Chart.js library failed to load'));
+      }
+    }, 100);
+  });
+}
+
+// Load data
+async function loadData() {
+  try {
+    // Ensure Chart.js is loaded
+    try {
+      await waitForChartJs();
+    } catch (e) {
+      console.warn('Chart.js not available, proceeding without charts:', e);
+    }
+
+    // Load stages detail
+    const stagesResponse = await fetch(`/workflow/product/${productId}/stages/detail`, {
+      headers: { 'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}` }
+    });
+    if (!stagesResponse.ok) throw new Error('Failed to load stages');
+    const stagesData = await stagesResponse.json();
+    
+    // Load department stats
+    const deptResponse = await fetch(`/workflow/product/${productId}/department-stats`, {
+      headers: { 'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}` }
+    });
+    if (!deptResponse.ok) throw new Error('Failed to load department stats');
+    const deptData = await deptResponse.json();
+
+    allStagesData = stagesData.stages || [];
+    allDepartmentStats = deptData.data || [];
+
+    // Update page title
+    if (stagesData.product) {
+      document.getElementById('productTitle').textContent = stagesData.product.product_code;
+      document.getElementById('productName').textContent = stagesData.product.product_name;
+    }
+
+    // Update stats cards
+    let totalHoursBrutto = 0;
+    let totalCompletedCount = 0;
+    let totalWorkersCount = 0;
+
+    allStagesData.forEach(stage => {
+      totalHoursBrutto += (stage.stats?.totalHours || 0);
+      totalCompletedCount += (stage.stats?.completedWorkers || 0);
+      totalWorkersCount += (stage.stats?.totalWorkers || 0);
+    });
+
+    document.getElementById('totalHours').textContent = (Math.round(totalHoursBrutto * 10) / 10) + 'h';
+    document.getElementById('completedCount').textContent = totalCompletedCount;
+    document.getElementById('totalWorkers').textContent = totalWorkersCount;
+
+    // Render department stats
+    renderDepartmentStats();
+
+    // Render stages details
+    renderStagesDetails();
+
+    // Render progress chart
+    renderProgressChart(totalHoursBrutto, allStagesData);
+
+  } catch (error) {
+    console.error('Error loading data:', error);
+    document.getElementById('stagesContainer').innerHTML = `<div class="p-6 text-red-500">Lỗi: ${error.message}</div>`;
+  }
+}
+
+// Render department stats
+function renderDepartmentStats() {
+  const container = document.getElementById('departmentStats');
+  container.innerHTML = '';
+
+  if (!allDepartmentStats || allDepartmentStats.length === 0) {
+    container.innerHTML = '<p class="text-gray-500">Chưa có dữ liệu bộ phận</p>';
+    return;
+  }
+
+  allDepartmentStats.forEach(dept => {
+    const deptName = dept.department || 'Chưa xác định';
+    const deptLabel = formatDepartmentName(deptName);
+    
+    const statDiv = document.createElement('div');
+    statDiv.className = 'p-4 border rounded-lg bg-gray-50';
+    statDiv.innerHTML = `
+      <div class="flex justify-between items-center">
+        <div class="flex-1">
+          <h4 class="font-semibold text-gray-900">${deptLabel}</h4>
+          <p class="text-sm text-gray-500 mt-1">
+            <i class="fas fa-users mr-2"></i>${dept.dept_workers} workers |
+            <i class="fas fa-check-circle mr-2 text-green-600"></i>${dept.completed_count || 0} hoàn thành |
+            <i class="fas fa-clock mr-2 text-blue-600"></i>${dept.total_hours ? Math.round(dept.total_hours * 10) / 10 : 0}h làm việc
+          </p>
+        </div>
+      </div>
+    `;
+    container.appendChild(statDiv);
+  });
+}
+
+// Format department name from role
+function formatDepartmentName(role) {
+  const mapping = {
+    'RAP': 'RẬP',
+    'CAT': 'CẮT',
+    'MAY': 'MAY',
+    'THIET_KE': 'THIẾT KẾ',
+    'DINH_KET': 'ĐÍNH KẾT',
+    'ADMIN': 'Quản Trị',
+    'THU_MUA': 'Thu Mua'
+  };
+  return mapping[role] || role;
+}
+
+// Render stages details
+function renderStagesDetails() {
+  const container = document.getElementById('stagesContainer');
+  container.innerHTML = '';
+
+  (allStagesData || []).forEach(stage => {
+    const percentage = stage?.stats?.progress || 0;
+    const progressColor = percentage < 50 ? 'bg-red-500' : percentage < 100 ? 'bg-yellow-500' : 'bg-green-500';
+
+    let stageHtml = `
+      <div class="px-6 py-4 space-y-4">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="flex items-center space-x-3">
+              <h3 class="text-lg font-semibold text-gray-900">${stage.stage_name || 'Unknown Stage'}</h3>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                ${stage.status || 'unknown'}
+              </span>
+            </div>
+            <p class="mt-2 text-sm text-gray-600">
+              <i class="fas fa-hourglass-end mr-2"></i>
+              Định Mức: <strong>${stage.norm_hours || 0}h</strong> | 
+              Đã Làm: <strong>${stage.stats?.totalHours || 0}h</strong>
+            </p>
+          </div>
+          ${userRole === 'admin' ? `
+            <button onclick="openEditModal(${stage.stage_id}, '${stage.stage_name}', ${stage.norm_hours})" 
+              class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center text-sm">
+              <i class="fas fa-edit mr-2"></i>Chỉnh Sửa
+            </button>
+          ` : ''}
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="${progressColor} h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+        </div>
+        <p class="text-xs text-gray-600 text-right">Tiến độ: ${percentage}%</p>
+
+        <!-- Stage Progress Chart -->
+        <div class="flex justify-center mt-4">
+          <div style="width: 120px; height: 120px;">
+            <canvas id="stageChart-${stage.stage_id}"></canvas>
+          </div>
+          <div style="width: 120px; padding-left: 20px; display: flex; align-items: center;">
+            <div class="text-sm">
+              <p class="font-semibold text-gray-900">${stage.stage_name}</p>
+              <p class="text-gray-600 mt-1">
+                <span class="text-green-600 font-bold">${stage.stats?.totalHours || 0}h</span> / ${stage.norm_hours || 0}h
+              </p>
+              <p class="text-xs text-gray-500 mt-2">Đã làm: ${Math.round((stage.stats?.totalHours || 0) / (stage.norm_hours || 1) * 100)}%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Worker Status Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+          <div class="bg-blue-50 p-3 rounded text-center">
+            <p class="text-2xl font-bold text-blue-600">${stage.stats?.assignedWorkers || 0}</p>
+            <p class="text-xs text-gray-600">Được Gán</p>
+          </div>
+          <div class="bg-yellow-50 p-3 rounded text-center">
+            <p class="text-2xl font-bold text-yellow-600">${stage.stats?.workingWorkers || 0}</p>
+            <p class="text-xs text-gray-600">Đang Làm</p>
+          </div>
+          <div class="bg-green-50 p-3 rounded text-center">
+            <p class="text-2xl font-bold text-green-600">${stage.stats?.completedWorkers || 0}</p>
+            <p class="text-xs text-gray-600">Hoàn Thành</p>
+          </div>
+          <div class="bg-purple-50 p-3 rounded text-center">
+            <p class="text-2xl font-bold text-purple-600">${stage.stats?.totalWorkers || 0}</p>
+            <p class="text-xs text-gray-600">Tổng</p>
+          </div>
+        </div>
+
+        <!-- Workers List -->
+        <div class="mt-4 border-t pt-4">
+          <h4 class="font-semibold text-gray-900 mb-3">Danh Sách Workers</h4>
+          <div class="space-y-2 max-h-48 overflow-y-auto">
+            ${stage.workers && stage.workers.length > 0 ? stage.workers.map(worker => {
+              const statusColor = worker.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                                worker.status === 'working' ? 'bg-yellow-100 text-yellow-800' : 
+                                'bg-gray-100 text-gray-800';
+              return `
+                <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900">${worker.full_name || worker.username}</p>
+                    <p class="text-xs text-gray-500">${worker.role}</p>
+                  </div>
+                  <div class="flex items-center space-x-3">
+                    <span class="text-xs font-semibold text-gray-700">${worker.hours_worked ? Math.round(worker.hours_worked * 10) / 10 : 0}h</span>
+                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${statusColor}">
+                      ${worker.status}
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('') : '<p class="text-sm text-gray-500">Chưa có workers</p>'}
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML += stageHtml;
+  });
+
+  // Render stage charts after all stage HTML is added
+  if (window.Chart) {
+    allStagesData.forEach(stage => {
+      renderStageChart(stage);
+    });
+  }
+}
+
+// Render chart for each stage
+function renderStageChart(stage) {
+  const chartId = `stageChart-${stage.stage_id}`;
+  const canvas = document.getElementById(chartId);
+  if (!canvas) return;
+
+  const completed = stage.stats?.totalHours || 0;
+  const remaining = Math.max(0, (stage.norm_hours || 0) - completed);
+
+  // Clean up old chart if exists
+  const chartKey = `stageChart_${stage.stage_id}`;
+  if (window.stageCharts && window.stageCharts[chartKey]) {
+    try {
+      window.stageCharts[chartKey].destroy();
+    } catch (e) {
+      console.warn('Could not destroy chart:', e);
+    }
+  }
+
+  if (!window.stageCharts) {
+    window.stageCharts = {};
+  }
+
+  const ctx = canvas.getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Đã Làm', 'Còn Lại'],
+      datasets: [{
+        data: [completed, remaining],
+        backgroundColor: ['#3b82f6', '#e5e7eb'],
+        borderColor: '#ffffff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.label + ': ' + (Math.round(context.parsed * 10) / 10) + 'h';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  window.stageCharts[chartKey] = chart;
+}
+
+// Render progress chart
+function renderProgressChart(totalHours, stages) {
+  const chartCanvas = document.getElementById('progressChart');
+  if (!chartCanvas) return;
+
+  const total = (stages || []).reduce((sum, s) => sum + (s.norm_hours || 0), 0);
+  const completed = totalHours || 0;
+  const remaining = Math.max(0, total - completed);
+
+  // Destroy existing chart if it exists and has destroy method
+  if (window.progressChart && typeof window.progressChart.destroy === 'function') {
+    try {
+      window.progressChart.destroy();
+    } catch (e) {
+      console.warn('Could not destroy existing chart:', e);
+    }
+  }
+
+  // Check if Chart.js is loaded
+  if (!window.Chart) {
+    console.error('Chart.js library not loaded');
+    return;
+  }
+
+  const ctx = chartCanvas.getContext('2d');
+  window.progressChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Đã Làm', 'Còn Lại'],
+      datasets: [{
+        data: [completed, remaining],
+        backgroundColor: ['#10b981', '#e5e7eb'],
+        borderColor: '#ffffff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.label + ': ' + (Math.round(context.parsed * 10) / 10) + 'h';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Update legend
+  const legendDiv = document.getElementById('chartLegend');
+  legendDiv.innerHTML = `
+    <div class="flex items-center">
+      <span class="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+      <span>Đã Làm: ${Math.round(completed * 10) / 10}h</span>
+    </div>
+    <div class="flex items-center">
+      <span class="inline-block w-3 h-3 bg-gray-300 rounded-full mr-2"></span>
+      <span>Còn Lại: ${Math.round(remaining * 10) / 10}h</span>
+    </div>
+    <div class="flex items-center mt-2">
+      <span class="font-semibold">Tổng: ${Math.round(total * 10) / 10}h</span>
+    </div>
+  `;
+}
+
+// Edit norm hours modal
+function openEditModal(stageId, stageName, normHours) {
+  currentEditData = { productId: productId, stageId: stageId };
+  document.getElementById('editStageName').value = stageName;
+  document.getElementById('editNormHoursInput').value = normHours;
+  document.getElementById('editNormHoursModal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  document.getElementById('editNormHoursModal').classList.add('hidden');
+}
+
+// Submit edit norm hours
+document.getElementById('editNormHoursForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const normHours = parseFloat(document.getElementById('editNormHoursInput').value);
+  
+  if (!normHours || normHours <= 0) {
+    alert('Vui lòng nhập giá trị giờ hợp lệ');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/workflow/product/${currentEditData.productId}/stage/${currentEditData.stageId}/update-norm-hours`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify({ norm_hours: normHours })
+    });
+
+    if (!response.ok) throw new Error('Failed to update norm hours');
+    
+    alert('Cập nhật định mức thành công!');
+    closeEditModal();
+    loadData(); // Reload data
+
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Lỗi: ' + error.message);
+  }
+});
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', loadData);
+
+// Auto-refresh every 30 seconds
+setInterval(loadData, 30000);
+</script>
+
+<%- include('../footer') %>

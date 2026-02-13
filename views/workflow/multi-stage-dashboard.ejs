@@ -1,0 +1,541 @@
+<%- include('../header') %>
+
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Multi-Stage Workflow Dashboard</h1>
+        <p class="mt-2 text-sm text-gray-600">Quản lý sản phẩm với nhiều bộ phận làm song song</p>
+      </div>
+      <div class="flex space-x-3">
+        <a href="/product/dashboard" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 flex items-center">
+          <i class="fas fa-arrow-left mr-2"></i>Dashboard Cũ
+        </a>
+        <button onclick="showCreateProductModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center">
+          <i class="fas fa-plus mr-2"></i>Tạo Sản Phẩm Mới
+        </button>
+      </div>
+    </div>
+
+    <!-- Overview Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-sm font-medium text-gray-500">Active Products</h3>
+            <p class="text-2xl font-semibold text-gray-900" id="totalProducts">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-sm font-medium text-gray-500">Active Stages</h3>
+            <p class="text-2xl font-semibold text-gray-900" id="totalStages">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-sm font-medium text-gray-500">Total Workers</h3>
+            <p class="text-2xl font-semibold text-gray-900" id="totalWorkers">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-sm font-medium text-gray-500">Working Now</h3>
+            <p class="text-2xl font-semibold text-gray-900" id="workingNow">0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products List -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900">Products in Multi-Stage Workflow</h2>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Code</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Name</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Stages</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Workers</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Working Now</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
+            <!-- Data will be loaded via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Create Product Modal -->
+<div id="createProductModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold text-gray-900">Tạo Sản Phẩm Mới</h3>
+      <button onclick="closeCreateProductModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+    </div>
+    
+    <form id="createProductForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Mã sản phẩm</label>
+        <input type="text" name="product_code" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Tên sản phẩm</label>
+        <input type="text" name="product_name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+      </div>
+      
+      <div class="border-t pt-4">
+        <label class="block text-sm font-medium text-gray-700 mb-3">Chọn các bộ phận làm song song</label>
+        <div class="space-y-2">
+          <label class="flex items-center">
+            <input type="checkbox" name="stages" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <span class="ml-2">RẬP (Giờ định mức: <input type="number" name="stage_hours_1" min="1" value="4" class="w-16 rounded border-gray-300">h)</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="stages" value="2" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <span class="ml-2">CẮT (Giờ định mức: <input type="number" name="stage_hours_2" min="1" value="3" class="w-16 rounded border-gray-300">h)</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="stages" value="3" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <span class="ml-2">MAY (Giờ định mức: <input type="number" name="stage_hours_3" min="1" value="6" class="w-16 rounded border-gray-300">h)</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="stages" value="4" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <span class="ml-2">THIẾT_KẾ (Giờ định mức: <input type="number" name="stage_hours_4" min="1" value="5" class="w-16 rounded border-gray-300">h)</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="stages" value="5" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <span class="ml-2">ĐÍNH_KẾT (Giờ định mức: <input type="number" name="stage_hours_5" min="1" value="8" class="w-16 rounded border-gray-300">h)</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="flex justify-end space-x-3 pt-4">
+        <button type="button" onclick="closeCreateProductModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+          <i class="fas fa-save mr-2"></i>Tạo Sản Phẩm
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Get token from server-side render
+const authToken = '<%= typeof token !== "undefined" ? token : "" %>';
+
+// Show/hide create product modal
+function showCreateProductModal() {
+  document.getElementById('createProductModal').classList.remove('hidden');
+}
+
+function closeCreateProductModal() {
+  document.getElementById('createProductModal').classList.add('hidden');
+  document.getElementById('createProductForm').reset();
+}
+
+// Create product and assign stages
+document.getElementById('createProductForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = new FormData(e.target);
+  const productCode = formData.get('product_code');
+  const productName = formData.get('product_name');
+  
+  // Get selected stages
+  const selectedStages = [];
+  const stageHours = {};
+  formData.getAll('stages').forEach(stageId => {
+    selectedStages.push(parseInt(stageId));
+    stageHours[stageId] = parseInt(formData.get(`stage_hours_${stageId}`)) || 0;
+  });
+  
+  if (selectedStages.length === 0) {
+    alert('Vui lòng chọn ít nhất 1 bộ phận');
+    return;
+  }
+  
+  try {
+    // Step 1: Create product
+    const createResponse = await fetch('/product/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        product_code: productCode,
+        product_name: productName,
+        stageHours: stageHours
+      })
+    });
+    
+    if (!createResponse.ok) {
+      const error = await createResponse.json();
+      throw new Error(error.error || 'Failed to create product');
+    }
+    
+    const createResult = await createResponse.json();
+    const productId = createResult.product?.id;
+    
+    if (!productId) {
+      throw new Error('Product created but no ID returned');
+    }
+    
+    // Step 2: Assign selected stages
+    const assignResponse = await fetch('/workflow/assign-stages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        productId: productId,
+        stageIds: selectedStages,
+        userIds: [] // Admin sẽ gán workers sau
+      })
+    });
+    
+    if (!assignResponse.ok) {
+      throw new Error('Product created but failed to assign stages');
+    }
+    
+    alert(`Tạo sản phẩm ${productCode} thành công với ${selectedStages.length} bộ phận!`);
+    closeCreateProductModal();
+    loadOverview(); // Reload data
+    
+  } catch (error) {
+    console.error('Error creating product:', error);
+    alert('Lỗi: ' + error.message);
+  }
+});
+
+// Load overview data
+async function loadOverview() {
+  try {
+    const response = await fetch('/workflow/overview', {
+      headers: {
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load overview');
+    
+    const result = await response.json();
+    const data = result.data || [];
+    
+    // Update stats
+    document.getElementById('totalProducts').textContent = data.length;
+    
+    let totalStages = 0;
+    let totalWorkers = 0;
+    let workingNow = 0;
+    
+    data.forEach(product => {
+      totalStages += product.stage_count || 0;
+      totalWorkers += product.total_workers || 0;
+      workingNow += product.working_now || 0;
+    });
+    
+    document.getElementById('totalStages').textContent = totalStages;
+    document.getElementById('totalWorkers').textContent = totalWorkers;
+    document.getElementById('workingNow').textContent = workingNow;
+    
+    // Populate table
+    const tbody = document.getElementById('productsTableBody');
+    tbody.innerHTML = '';
+    
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No active products in multi-stage workflow</td></tr>';
+      return;
+    }
+    
+    data.forEach(product => {
+      const row = document.createElement('tr');
+      row.className = 'hover:bg-gray-50';
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm font-medium text-gray-900">${product.product_code}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${product.product_name}</div>
+        </td>
+        <td class="px-6 py-4">
+          <div class="flex flex-wrap gap-1">
+            ${(product.active_stages || '').split(',').map(stage => 
+              `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${stage}</span>`
+            ).join('')}
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${product.total_workers || 0}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.working_now > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+            ${product.working_now || 0} working
+          </span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+          <a href="/workflow/product/${product.product_id}/detail" class="text-indigo-600 hover:text-indigo-900 mr-3">Chi Tiết</a>
+          <button onclick="assignWorkersModal(${product.product_id}, '${product.product_code}')" class="text-blue-600 hover:text-blue-900 mr-3">Gán Workers</button>
+          <button onclick="manageStages(${product.product_id})" class="text-green-600 hover:text-green-900">Quản lý Stages</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+    
+  } catch (error) {
+    console.error('Error loading overview:', error);
+    alert('Failed to load overview data');
+  }
+}
+
+// Manage stages for a product
+function manageStages(productId) {
+  window.location.href = `/product/${productId}?tab=stages`;
+}
+
+// Assign workers modal
+let currentProductId = null;
+let currentProductCode = '';
+let availableStages = [];
+let allUsers = [];
+
+async function assignWorkersModal(productId, productCode) {
+  currentProductId = productId;
+  currentProductCode = productCode;
+  
+  try {
+    // Fetch active stages for this product
+    const stagesResponse = await fetch(`/workflow/product/${productId}/active-stages`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    if (!stagesResponse.ok) throw new Error('Failed to fetch active stages');
+    const stagesData = await stagesResponse.json();
+    availableStages = stagesData.data || [];
+    
+    // Update modal content
+    document.getElementById('assignModalProductCode').textContent = productCode;
+    
+    // Populate stages dropdown
+    const stageSelect = document.getElementById('assignStageSelect');
+    stageSelect.innerHTML = '<option value="">-- Chọn bộ phận --</option>';
+    availableStages.forEach(stage => {
+      const option = document.createElement('option');
+      option.value = stage.stage_id;
+      option.textContent = `${stage.stage_name} (${stage.status})`;
+      stageSelect.appendChild(option);
+    });
+    
+    // Add change listener for stage selection
+    stageSelect.onchange = async (e) => {
+      const stageId = parseInt(e.target.value);
+      if (!stageId) {
+        document.getElementById('assignWorkersContainer').innerHTML = '';
+        return;
+      }
+      
+      try {
+        // Fetch assigned workers
+        const assignedResponse = await fetch(`/workflow/assigned-workers/${productId}/${stageId}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!assignedResponse.ok) throw new Error('Failed to fetch assigned workers');
+        const assignedData = await assignedResponse.json();
+        const assignedWorkerIds = (assignedData.data || []).map(w => w.user_id);
+        
+        // Fetch available workers for selected stage
+        const workersResponse = await fetch(`/workflow/available-workers/${productId}/${stageId}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!workersResponse.ok) throw new Error('Failed to fetch available workers');
+        const workersData = await workersResponse.json();
+        allUsers = workersData.data || [];
+        
+        // Populate workers checkboxes
+        const workersContainer = document.getElementById('assignWorkersContainer');
+        workersContainer.innerHTML = '';
+        if (allUsers.length === 0) {
+          workersContainer.innerHTML = '<p class="text-gray-500 text-sm">No available workers for this stage</p>';
+        } else {
+          allUsers.forEach(user => {
+            const isAssigned = assignedWorkerIds.includes(user.id);
+            const label = document.createElement('label');
+            label.className = `flex items-center p-2 rounded ${isAssigned ? 'bg-green-50 border border-green-200' : 'hover:bg-gray-50'}`;
+            label.innerHTML = `
+              <input type="checkbox" name="worker" value="${user.id}" ${isAssigned ? 'checked disabled' : ''} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" ${isAssigned ? 'style="cursor:not-allowed"' : ''}>
+              <span class="ml-2 text-sm">${user.full_name} (${user.username}) - <span class="text-xs text-gray-500">${user.role}</span>${isAssigned ? ' <span class="ml-2 inline-block px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full font-medium">Already assigned</span>' : ''}</span>
+            `;
+            workersContainer.appendChild(label);
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching workers for stage:', error);
+        document.getElementById('assignWorkersContainer').innerHTML = `<p class="text-red-500 text-sm">Error loading workers: ${error.message}</p>`;
+      }
+    };
+    
+    // Show modal
+    document.getElementById('assignWorkersModal').classList.remove('hidden');
+    
+  } catch (error) {
+    console.error('Error opening assign workers modal:', error);
+    alert('Failed to load data for assignment');
+  }
+}
+
+function closeAssignWorkersModal() {
+  document.getElementById('assignWorkersModal').classList.add('hidden');
+  document.getElementById('assignWorkersForm').reset();
+}
+
+async function submitAssignWorkers(event) {
+  event.preventDefault();
+  
+  const formData = new FormData(event.target);
+  const stageId = parseInt(formData.get('stageId'));
+  const selectedWorkers = formData.getAll('worker').map(id => parseInt(id));
+  
+  if (!stageId) {
+    alert('Vui lòng chọn bộ phận');
+    return;
+  }
+  
+  if (selectedWorkers.length === 0) {
+    alert('Vui lòng chọn ít nhất 1 worker');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/workflow/assign-workers', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        productId: currentProductId,
+        stageId: stageId,
+        userIds: selectedWorkers
+      })
+    });
+    
+    if (!response.ok) throw new Error('Failed to assign workers');
+    
+    alert('Workers assigned successfully!');
+    closeAssignWorkersModal();
+    loadOverview(); // Refresh data
+    
+  } catch (error) {
+    console.error('Error assigning workers:', error);
+    alert('Failed to assign workers');
+  }
+}
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', loadOverview);
+
+// Auto-refresh every 30 seconds
+setInterval(loadOverview, 30000);
+</script>
+
+<!-- Assign Workers Modal -->
+<div id="assignWorkersModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold text-gray-900">Gán Workers</h3>
+      <button onclick="closeAssignWorkersModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+    </div>
+    
+    <p class="text-sm text-gray-600 mb-4">
+      Sản phẩm: <span id="assignModalProductCode" class="font-semibold"></span>
+    </p>
+    
+    <form id="assignWorkersForm" onsubmit="submitAssignWorkers(event)" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Chọn Bộ Phận *</label>
+        <select 
+          name="stageId" 
+          id="assignStageSelect"
+          required
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+          <option value="">-- Chọn bộ phận --</option>
+        </select>
+      </div>
+      
+      <div class="border-t pt-4">
+        <label class="block text-sm font-medium text-gray-700 mb-3">Chọn Workers *</label>
+        <div id="assignWorkersContainer" class="max-h-64 overflow-y-auto border rounded-md p-2 space-y-1">
+          <!-- Workers will be populated by JavaScript -->
+        </div>
+      </div>
+      
+      <div class="flex justify-end space-x-3 pt-4">
+        <button type="button" onclick="closeAssignWorkersModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+          <i class="fas fa-user-plus mr-2"></i>Gán Workers
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../footer') %>

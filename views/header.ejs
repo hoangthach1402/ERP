@@ -42,13 +42,26 @@
       <!-- Main Navigation -->
       <% if (user) { %>
       <div class="border-t border-purple-500 py-3">
-        <div class="flex space-x-6">
+        <div class="flex flex-wrap space-x-4">
+          <!-- Old Workflow -->
           <a href="/product/dashboard" class="text-white hover:bg-purple-700 px-3 py-2 rounded-md text-sm font-medium transition">
-            <i class="fas fa-chart-line mr-2"></i>Dashboard
+            <i class="fas fa-chart-line mr-2"></i>Dashboard Cũ
           </a>
           <a href="/scan/page" class="text-white hover:bg-purple-700 px-3 py-2 rounded-md text-sm font-medium transition">
             <i class="fas fa-qrcode mr-2"></i>Quét QR
           </a>
+          
+          <!-- New Multi-Stage Workflow -->
+          <% if (user.role === 'ADMIN') { %>
+            <a href="/workflow/multi-stage-dashboard" class="text-white bg-purple-800 hover:bg-purple-900 px-3 py-2 rounded-md text-sm font-medium transition">
+              <i class="fas fa-layer-group mr-2"></i>Multi-Stage
+            </a>
+          <% } %>
+          <a href="/workflow/worker-dashboard" class="text-white bg-purple-800 hover:bg-purple-900 px-3 py-2 rounded-md text-sm font-medium transition">
+            <i class="fas fa-tasks mr-2"></i>My Tasks
+          </a>
+          
+          <!-- Admin -->
           <% if (user.role === 'ADMIN') { %>
             <a href="/admin/dashboard" class="text-white hover:bg-purple-700 px-3 py-2 rounded-md text-sm font-medium transition">
               <i class="fas fa-cog mr-2"></i>Quản Lý
