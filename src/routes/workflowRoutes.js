@@ -129,4 +129,7 @@ router.post('/inbound/create-custom', workflowController.createCustomInboundReco
 // Warehouse management
 router.post('/warehouse/add-custom-item', workflowController.addCustomItemToWarehouse);
 
+// Task counts for current user
+router.get('/task-counts', workflowController.getTaskCounts);
+
 export default router;

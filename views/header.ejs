@@ -52,9 +52,29 @@
           
           <!-- Worker Tasks -->
           <% if (user.role !== 'THU_MUA') { %>
-            <a href="/workflow/worker-dashboard" class="text-white bg-purple-800 hover:bg-purple-900 px-3 py-2 rounded-md text-sm font-medium transition">
-              <i class="fas fa-tasks mr-2"></i>My Tasks
-            </a>
+            <div class="relative group">
+              <button id="myTasksBtn" onclick="return toggleTasksDropdown(event)" class="text-white bg-purple-800 hover:bg-purple-900 px-3 py-2 rounded-md text-sm font-medium transition">
+                <i class="fas fa-tasks mr-2"></i>My Tasks
+              </button>
+              <!-- Dropdown Menu for Mobile -->
+              <div id="taskStatusDropdown" class="hidden md:hidden absolute top-full mt-2 left-0 bg-white rounded-lg shadow-lg p-2 w-48 z-50">
+                <button onclick="goToTasks('assigned')" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100 transition flex items-center gap-2">
+                  <span>📋</span>
+                  <span>Assigned</span>
+                  <span class="ml-auto bg-red-600 text-white rounded-full px-2 py-0.5 text-xs font-bold" id="dropdown-count-assigned">0</span>
+                </button>
+                <button onclick="goToTasks('working')" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100 transition flex items-center gap-2">
+                  <span>⚙️</span>
+                  <span>Working</span>
+                  <span class="ml-auto bg-yellow-600 text-white rounded-full px-2 py-0.5 text-xs font-bold" id="dropdown-count-working">0</span>
+                </button>
+                <button onclick="goToTasks('completed')" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100 transition flex items-center gap-2">
+                  <span>✅</span>
+                  <span>Done</span>
+                  <span class="ml-auto bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs font-bold" id="dropdown-count-completed">0</span>
+                </button>
+              </div>
+            </div>
           <% } %>
           
           <!-- Purchasing Requests (Purchasing Staff) -->

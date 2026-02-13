@@ -1,23 +1,47 @@
+<!-- Apply Fixed Header for Mobile -->
+<style>
+  @media (max-width: 767px) {
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      z-index: 50;
+    }
+  }
+</style>
+
 <%- include('../header') %>
 
-<div class="min-h-screen bg-gray-50 py-8">
+<!-- Mobile Layout -->
+<div class="md:hidden flex flex-col bg-white bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen" style="padding-top: 140px; margin-top: 20px;">
+  <!-- Scrollable Task Content -->
+  <div id="tasksList" class="flex-1 overflow-y-auto scroll-smooth pb-36">
+    <!-- Tasks will be loaded here -->
+  </div>
+  
+  <!-- Fixed Action Bar at Bottom -->
+  <div id="mobileActionBar" class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-100 shadow-2xl md:hidden z-50">
+    <div class="grid grid-cols-2 gap-0 p-0" id="actionButtonsContainer">
+      <!-- Action buttons will be populated here -->
+    </div>
+  </div>
+</div>
+
+<!-- Desktop Layout -->
+<div class="hidden md:block min-h-screen bg-gray-50 py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     
     <!-- Header -->
-    <div class="mb-8 flex justify-between items-center">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900">My Tasks</h1>
-        <p class="mt-2 text-sm text-gray-600">Công việc được gán cho bạn</p>
-      </div>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">My Tasks</h1>
     </div>
 
     <!-- Filter Tabs -->
     <div class="mb-6">
       <div class="border-b border-gray-200">
         <nav class="-mb-px flex space-x-8">
-          <button onclick="loadTasks('all')" class="tab-button active border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-status="all">
-            All Tasks
-          </button>
           <button onclick="loadTasks('assigned')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-status="assigned">
             Assigned
           </button>
@@ -32,10 +56,9 @@
     </div>
 
     <!-- Tasks List -->
-    <div id="tasksList" class="space-y-4">
+    <div id="tasksListDesktop" class="space-y-4">
       <!-- Tasks will be loaded here -->
     </div>
-
   </div>
 </div>
 
@@ -44,13 +67,83 @@
 const authToken = '<%= typeof token !== "undefined" ? token : "" %>';
 
 let currentStatus = null;
+let currentTask = null;
+let taskCounts = { assigned: 0, working: 0, completed: 0 };
+
+// Fetch task counts and update badges
+async function updateTaskCounts() {
+  try {
+    const response = await fetch('/workflow/task-counts', {
+      headers: {
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      }
+    });
+    
+    if (response.ok) {
+      taskCounts = await response.json();
+      // Update count badges on dropdown (in header)
+      const countAssigned = document.getElementById('dropdown-count-assigned');
+      const countWorking = document.getElementById('dropdown-count-working');
+      const countCompleted = document.getElementById('dropdown-count-completed');
+      
+      if (countAssigned) countAssigned.textContent = taskCounts.assigned || 0;
+      if (countWorking) countWorking.textContent = taskCounts.working || 0;
+      if (countCompleted) countCompleted.textContent = taskCounts.completed || 0;
+    }
+  } catch (error) {
+    console.error('Error fetching task counts:', error);
+  }
+}
+
+// Toggle dropdown menu
+function toggleTasksDropdown(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const dropdown = document.getElementById('taskStatusDropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('hidden');
+  }
+}
+
+// Close dropdown menu
+function closeTasksDropdown() {
+  const dropdown = document.getElementById('taskStatusDropdown');
+  if (dropdown) {
+    dropdown.classList.add('hidden');
+  }
+}
+
+// Go to tasks with status filter
+function goToTasks(status) {
+  loadTasks(status);
+  closeTasksDropdown();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const dropdown = document.getElementById('taskStatusDropdown');
+  const btn = document.getElementById('myTasksBtn');
+  if (dropdown && btn && !dropdown.contains(event.target) && !btn.contains(event.target)) {
+    dropdown.classList.add('hidden');
+  }
+});
 
 // Load tasks
 async function loadTasks(status = null) {
-  currentStatus = status === 'all' ? null : status;
+  currentStatus = status || 'assigned';
+  
+  // Determine which container to use
+  const isMobile = window.innerWidth < 768;
+  const container = isMobile ? document.getElementById('tasksList') : document.getElementById('tasksListDesktop');
+  
+  if (!container) {
+    console.error('Tasks container not found');
+    return;
+  }
   
   // Show loading state
-  const container = document.getElementById('tasksList');
   container.innerHTML = `
     <div class="bg-white rounded-lg shadow p-8 text-center">
       <svg class="animate-spin mx-auto h-12 w-12 text-indigo-600" fill="none" viewBox="0 0 24 24">
@@ -62,9 +155,7 @@ async function loadTasks(status = null) {
   `;
   
   try {
-    const url = status && status !== 'all' 
-      ? `/workflow/my-tasks?status=${status}` 
-      : '/workflow/my-tasks';
+    const url = status ? `/workflow/my-tasks?status=${status}` : '/workflow/my-tasks';
     
     const response = await fetch(url, {
       headers: {
@@ -74,7 +165,6 @@ async function loadTasks(status = null) {
     
     if (!response.ok) {
       if (response.status === 401) {
-        // Redirect to login if not authenticated
         window.location.href = '/login';
         return;
       }
@@ -84,24 +174,25 @@ async function loadTasks(status = null) {
     const result = await response.json();
     const tasks = result.data || [];
     
-    // Update tabs
+    // Update tabs - new design for mobile tabs
     document.querySelectorAll('.tab-button').forEach(btn => {
       const btnStatus = btn.getAttribute('data-status');
-      if (btnStatus === (status || 'all')) {
-        btn.classList.remove('border-transparent', 'text-gray-500');
-        btn.classList.add('border-indigo-500', 'text-indigo-600');
+      if (btnStatus === status) {
+        btn.classList.remove('border-transparent', 'text-gray-600');
+        btn.classList.add('border-indigo-500', 'text-indigo-700', 'bg-indigo-50');
       } else {
-        btn.classList.remove('border-indigo-500', 'text-indigo-600');
-        btn.classList.add('border-transparent', 'text-gray-500');
+        btn.classList.remove('border-indigo-500', 'text-indigo-700', 'bg-indigo-50');
+        btn.classList.add('border-transparent', 'text-gray-600');
       }
     });
     
     // Render tasks
-    const container = document.getElementById('tasksList');
-    container.innerHTML = '';
+    const isMobile = window.innerWidth < 768;
+    const renderContainer = isMobile ? document.getElementById('tasksList') : document.getElementById('tasksListDesktop');
+    renderContainer.innerHTML = '';
     
     if (tasks.length === 0) {
-      container.innerHTML = `
+      renderContainer.innerHTML = `
         <div class="bg-white rounded-lg shadow p-8 text-center">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -113,8 +204,8 @@ async function loadTasks(status = null) {
     }
     
     tasks.forEach(task => {
-      const taskCard = createTaskCard(task);
-      container.appendChild(taskCard);
+      const taskCard = createTaskCard(task, isMobile);
+      renderContainer.appendChild(taskCard);
       
       // Render chart for working tasks
       if (task.status === 'working') {
@@ -128,6 +219,24 @@ async function loadTasks(status = null) {
         loadMaterialRequests(task.product_id, task.stage_id);
       }, 150);
     });
+    
+    // On mobile, auto-select first task and update action buttons
+    if (isMobile && tasks.length > 0) {
+      setTimeout(() => {
+        console.log('Auto-selecting first task:', tasks[0]);
+        selectTask(tasks[0]);
+      }, 200);
+    } else if (isMobile) {
+      console.log('No tasks to auto-select, clearing buttons');
+      updateActionButtons();
+    }
+    
+    // Set up scroll tracking for mobile buttons
+    if (isMobile) {
+      setTimeout(() => {
+        setupTaskScrollTracking();
+      }, 300);
+    }
     
   } catch (error) {
     console.error('Error loading tasks:', error);
@@ -150,74 +259,211 @@ async function loadTasks(status = null) {
   }
 }
 
+// Select task and update action buttons (mobile only)
+function selectTask(task) {
+  console.log('selectTask called with:', task);
+  currentTask = task;
+  updateActionButtons();
+  
+  // Highlight selected task on mobile
+  if (window.innerWidth < 768) {
+    document.querySelectorAll('#tasksList .task-card').forEach(el => {
+      el.classList.remove('ring-2', 'ring-indigo-500');
+    });
+    const selectedCard = document.querySelector(`#task-${task.product_id}-${task.stage_id}`);
+    if (selectedCard) {
+      selectedCard.classList.add('ring-2', 'ring-indigo-500');
+    }
+  }
+}
+
+// Update action buttons based on current task
+function updateActionButtons() {
+  console.log('updateActionButtons called, currentTask:', currentTask);
+  const container = document.getElementById('actionButtonsContainer');
+  if (!container) {
+    console.error('Action buttons container not found!');
+    return;
+  }
+  
+  // If no task selected, show disabled state
+  if (!currentTask) {
+    container.innerHTML = `
+      <button class="col-span-1 bg-gray-300 text-gray-500 font-bold py-3 px-2 text-center text-sm border-r border-b border-gray-200 transition-colors flex items-center justify-center gap-1 cursor-not-allowed" disabled>
+        <span>▶️</span> Start
+      </button>
+      <button class="col-span-1 bg-gray-300 text-gray-500 font-bold py-3 px-2 text-center text-sm border-b border-gray-200 transition-colors flex items-center justify-center gap-1 cursor-not-allowed" disabled>
+        <span>👥</span> Assign
+      </button>
+      <button class="col-span-1 bg-gray-300 text-gray-500 font-bold py-3 px-2 text-center text-sm border-r border-gray-200 transition-colors flex items-center justify-center gap-1 cursor-not-allowed" disabled>
+        <span>⏸️</span> Pause
+      </button>
+      <button class="col-span-1 bg-gray-300 text-gray-500 font-bold py-3 px-2 text-center text-sm transition-colors flex items-center justify-center gap-1 cursor-not-allowed" disabled>
+        <span>🛒</span> Material
+      </button>
+    `;
+    return;
+  }
+  
+  let buttons = '';
+  
+  if (currentTask.status === 'assigned') {
+    console.log('Rendering buttons for ASSIGNED task');
+    buttons = `
+      <button id="startWorkBtn" class="col-span-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-2 text-center text-sm border-r border-b border-gray-200 transition-colors flex items-center justify-center gap-1">
+        <span>▶️</span> Start
+      </button>
+      <button id="assignWorkersBtn" class="col-span-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-2 text-center text-sm border-b border-gray-200 transition-colors flex items-center justify-center gap-1">
+        <span>👥</span> Assign
+      </button>
+      <button id="pauseWorkBtn" class="col-span-1 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-2 text-center text-sm border-r border-gray-200 transition-colors flex items-center justify-center gap-1" style="display:none;">
+        <span>⏸️</span> Pause
+      </button>
+      <button id="materialRequestBtn" class="col-span-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-2 text-center text-sm transition-colors flex items-center justify-center gap-1">
+        <span>🛒</span> Material
+      </button>
+    `;
+  } else if (currentTask.status === 'working') {
+    console.log('Rendering buttons for WORKING task');
+    buttons = `
+      <button id="completeWorkBtn" class="col-span-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-2 text-center text-sm border-r border-b border-gray-200 transition-colors flex items-center justify-center gap-1">
+        <span>✅</span> Complete
+      </button>
+      <button id="assignWorkersBtn" class="col-span-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-2 text-center text-sm border-b border-gray-200 transition-colors flex items-center justify-center gap-1">
+        <span>👥</span> Assign
+      </button>
+      <button id="pauseWorkBtn" class="col-span-1 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-2 text-center text-sm border-r border-gray-200 transition-colors flex items-center justify-center gap-1">
+        <span>⏸️</span> Pause
+      </button>
+      <button id="materialRequestBtn" class="col-span-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-2 text-center text-sm transition-colors flex items-center justify-center gap-1">
+        <span>🛒</span> Material
+      </button>
+    `;
+  } else if (currentTask.status === 'completed') {
+    console.log('Rendering view for COMPLETED task');
+    buttons = `<div class="col-span-2 text-center py-4 text-gray-600 font-medium">✅ Task Completed</div>`;
+  } else {
+    console.log('Unknown status:', currentTask.status);
+    buttons = `<div class="col-span-2 text-center py-4 text-gray-600 font-medium">Status: ${currentTask.status}</div>`;
+  }
+  
+  container.innerHTML = buttons;
+  console.log('Buttons rendered:', buttons.substring(0, 100));
+  
+  // Attach event listeners
+  document.getElementById('startWorkBtn')?.addEventListener('click', () => {
+    console.log('Start Work clicked');
+    startWork(currentTask.product_id, currentTask.stage_id);
+  });
+  document.getElementById('completeWorkBtn')?.addEventListener('click', () => {
+    console.log('Complete Work clicked');
+    completeWork(currentTask.product_id, currentTask.stage_id);
+  });
+  document.getElementById('pauseWorkBtn')?.addEventListener('click', () => {
+    console.log('Pause Work clicked');
+    pauseWork(currentTask.product_id, currentTask.stage_id);
+  });
+  document.getElementById('assignWorkersBtn')?.addEventListener('click', () => {
+    console.log('Assign Workers clicked');
+    assignWorkersModal(currentTask.product_id, currentTask.stage_id, currentTask.product_code, currentTask.stage_name);
+  });
+  document.getElementById('materialRequestBtn')?.addEventListener('click', () => {
+    console.log('Material Request clicked');
+    openMaterialRequestModal(currentTask.product_id, currentTask.product_code, currentTask.stage_name);
+  });
+}
+
 // Create task card
-function createTaskCard(task) {
+function createTaskCard(task, isMobile = false) {
   const card = document.createElement('div');
-  card.className = 'bg-white rounded-lg shadow p-6';
+  
+  // Color coding based on status
+  const statusColors = {
+    'assigned': 'bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-orange-500 shadow-md',
+    'working': 'bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 shadow-md',
+    'completed': 'bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 shadow-md'
+  };
+  
+  const cardClasses = statusColors[task.status] || 'bg-white shadow-md';
+  const padding = isMobile ? 'p-4' : 'p-6';
+  
+  card.className = `rounded-lg ${cardClasses} ${padding} ${isMobile ? 'mb-3 cursor-pointer task-card' : ''}`;
   card.id = `task-${task.product_id}-${task.stage_id}`;
+  card.setAttribute('data-product-id', task.product_id);
+  card.setAttribute('data-stage-id', task.stage_id);
+  card.setAttribute('data-status', task.status);
+  
+  // Add click handler for mobile to select task
+  if (isMobile) {
+    card.addEventListener('click', () => selectTask(task));
+  }
   
   const statusBadge = getStatusBadge(task.status);
-  const actions = getTaskActions(task);
+  
+  // Desktop actions only (skip for mobile, buttons in action bar)
+  const actions = isMobile ? '' : getTaskActions(task);
   
   card.innerHTML = `
-    <div class="flex flex-col space-y-4">
-      <!-- Header Row with Chart -->
-      <div class="flex items-start justify-between">
-        <div class="flex-1">
-          <div class="flex items-center">
-            <h3 class="text-lg font-semibold text-gray-900">${task.product_code}</h3>
-            <span class="ml-3 ${statusBadge.class}">${statusBadge.text}</span>
-            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+    <div class="flex flex-col space-y-3">
+      <!-- Header Row -->
+      <div class="flex items-start justify-between ${isMobile ? 'flex-wrap gap-2' : ''}">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 ${isMobile ? 'flex-wrap' : ''}">
+            <h3 class="text-lg font-bold text-gray-900">${task.product_code}</h3>
+            <span class="${statusBadge.class}">
+              ${statusBadge.text}
+            </span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
               ${task.stage_name}
             </span>
           </div>
-          <p class="mt-1 text-sm text-gray-600">${task.product_name}</p>
+          <p class="mt-1.5 text-sm text-gray-800 font-medium">${task.product_name}</p>
         </div>
         
-        ${task.status === 'working' ? `
-          <div style="width: 120px; height: 120px; margin-left: 20px; flex-shrink: 0;">
+        ${task.status === 'working' && !isMobile ? `
+          <div style="width: 100px; height: 100px; margin-left: 16px; flex-shrink: 0;">
             <canvas id="chart-${task.product_id}-${task.stage_id}"></canvas>
           </div>
         ` : ''}
         
-        <div class="ml-4 flex flex-col space-y-2">
+        <div class="hidden md:flex md:flex-col md:space-y-2">
           ${actions}
         </div>
       </div>
       
       <!-- Details Row -->
-      <div class="grid grid-cols-3 gap-4 text-sm">
+      <div class="grid ${isMobile ? 'grid-cols-2 gap-2' : 'grid-cols-3 gap-4'} text-xs">
         ${task.start_time ? `
           <div>
-            <span class="text-gray-500">Started:</span>
-            <span class="ml-2 text-gray-900">${new Date(task.start_time).toLocaleString()}</span>
+            <span class="text-gray-600 font-semibold">Started:</span>
+            <div class="text-gray-900 font-medium">${new Date(task.start_time).toLocaleString('vi-VN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
           </div>
         ` : ''}
         ${task.hours_worked && task.status === 'completed' ? `
           <div>
-            <span class="text-gray-500">Hours worked:</span>
-            <span class="ml-2 text-gray-900">${Math.round(task.hours_worked * 10) / 10}h</span>
+            <span class="text-gray-600 font-semibold">Hours:</span>
+            <div class="text-gray-900 font-medium">${Math.round(task.hours_worked * 10) / 10}h</div>
           </div>
         ` : ''}
         ${task.end_time ? `
           <div>
-            <span class="text-gray-500">Completed:</span>
-            <span class="ml-2 text-gray-900">${new Date(task.end_time).toLocaleString()}</span>
+            <span class="text-gray-600 font-semibold">Ended:</span>
+            <div class="text-gray-900 font-medium">${new Date(task.end_time).toLocaleString('vi-VN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
           </div>
         ` : ''}
       </div>
       
       ${task.notes ? `
-        <div class="p-3 bg-yellow-50 rounded-md">
-          <p class="text-sm text-gray-700"><strong>Notes:</strong> ${task.notes}</p>
+        <div class="p-2.5 bg-white bg-opacity-60 rounded-md border-l-2 border-yellow-400">
+          <p class="text-xs text-gray-800"><strong>📝 Notes:</strong> ${task.notes}</p>
         </div>
       ` : ''}
       
       <!-- Material Requests Section -->
-      <div id="materialRequests-${task.product_id}-${task.stage_id}" class="mt-4 border-t pt-4">
-        <div class="flex justify-between items-center mb-3">
-          <h4 class="font-semibold text-gray-900">🛒 Yêu Cầu Mua Hàng</h4>
-          <button onclick="loadMaterialRequests(${task.product_id}, ${task.stage_id})" class="text-xs text-blue-600 hover:text-blue-800">
+      <div id="materialRequests-${task.product_id}-${task.stage_id}" class="mt-2.5 border-t border-opacity-30 pt-3 ${isMobile ? 'max-h-48 overflow-y-auto' : ''}">
+        <div class="flex justify-between items-center mb-2">
+          <h4 class="font-semibold text-gray-900 text-sm">🛒 Yêu Cầu</h4>
+          <button onclick="loadMaterialRequests(${task.product_id}, ${task.stage_id})" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
             <i class="fas fa-sync"></i>
           </button>
         </div>
@@ -234,9 +480,9 @@ function createTaskCard(task) {
 // Get status badge
 function getStatusBadge(status) {
   const badges = {
-    'assigned': { class: 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800', text: 'Assigned' },
-    'working': { class: 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800', text: 'Working' },
-    'completed': { class: 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800', text: 'Completed' }
+    'assigned': { class: 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-orange-600 text-white shadow-sm', text: '📋 Pending' },
+    'working': { class: 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-600 text-white shadow-sm', text: '⚙️ Working' },
+    'completed': { class: 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white shadow-sm', text: '✅ Done' }
   };
   return badges[status] || badges['assigned'];
 }
@@ -719,8 +965,44 @@ async function submitAssignWorkers(event) {
   }
 }
 
+// Calculate header height and set layout position dynamically
+function adjustLayoutForHeader() {
+  if (window.innerWidth >= 768) return; // Only for mobile
+  
+  const headerNav = document.querySelector('nav.bg-gradient-to-r');
+  const mobileLayout = document.querySelector('.md\\:hidden.flex.flex-col');
+  
+  if (!headerNav || !mobileLayout) {
+    console.warn('Header nav or mobile layout not found');
+    return;
+  }
+  
+  const headerHeight = headerNav.offsetHeight;
+  
+  // Set body padding
+  document.body.style.paddingTop = headerHeight + 'px';
+  
+  // Set mobile layout padding top
+  mobileLayout.style.paddingTop = headerHeight + 'px';
+  
+  console.log('Header height calculated:', headerHeight);
+}
+
 // Load tasks on page load
-document.addEventListener('DOMContentLoaded', () => loadTasks('all'));
+document.addEventListener('DOMContentLoaded', () => {
+  // Give a small delay for header to fully render
+  setTimeout(() => {
+    adjustLayoutForHeader();
+  }, 100);
+  
+  updateTaskCounts();
+  loadTasks('assigned');
+  // Initialize action buttons in disabled state
+  updateActionButtons();
+});
+
+// Re-adjust on window resize
+window.addEventListener('resize', adjustLayoutForHeader);
 </script>
 
 <!-- Assign Workers Modal -->

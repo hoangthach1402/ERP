@@ -468,6 +468,38 @@ export const getMyTasks = async (req, res) => {
 };
 
 /**
+ * Lấy đếm công việc của user hiện tại theo status
+ */
+export const getTaskCounts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get task counts for each status
+    const allTasks = await ProductStageWorker.getWorkerTasks(userId);
+    
+    const counts = {
+      assigned: 0,
+      working: 0,
+      completed: 0
+    };
+
+    if (Array.isArray(allTasks)) {
+      allTasks.forEach(task => {
+        if (task.status === 'assigned') counts.assigned++;
+        else if (task.status === 'working') counts.working++;
+        else if (task.status === 'completed') counts.completed++;
+      });
+    }
+
+    res.json(counts);
+
+  } catch (error) {
+    console.error('Error getting task counts:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
  * Lấy danh sách tất cả users (for admin to assign workers)
  */
 export const getAllUsers = async (req, res) => {
