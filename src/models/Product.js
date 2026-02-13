@@ -3,20 +3,25 @@ import { dbGet, dbAll, dbRun } from './database.js';
 export class Product {
   static async create(productData) {
     const { product_code, product_name, stageHours } = productData;
-    // First stage is always "RẬP" (id = 1)
+    // First stage is always "RẬP" (id = 1), or the first available stage
     const result = await dbRun(
       'INSERT INTO products (product_code, product_name, current_stage_id, status) VALUES (?, ?, ?, ?)',
       [product_code, product_name, 1, 'pending']
     );
     
-    // Create initial product_stage_tasks for all stages with custom hours
-    const stages = [1, 2, 3, 4, 5];
-    for (const stageId of stages) {
-      const normHours = (stageHours && stageHours[stageId]) ? parseInt(stageHours[stageId]) : 0;
-      await dbRun(
-        'INSERT INTO product_stage_tasks (product_id, stage_id, status, norm_hours) VALUES (?, ?, ?, ?)',
-        [result.lastID, stageId, stageId === 1 ? 'pending' : 'pending', normHours]
-      );
+    // Create initial product_stage_tasks for selected stages only
+    if (stageHours && typeof stageHours === 'object') {
+      for (const [stageId, normHours] of Object.entries(stageHours)) {
+        const stageIdInt = parseInt(stageId);
+        const normHoursInt = parseInt(normHours) || 0;
+        
+        if (stageIdInt > 0 && normHoursInt > 0) {
+          await dbRun(
+            'INSERT INTO product_stage_tasks (product_id, stage_id, status, norm_hours) VALUES (?, ?, ?, ?)',
+            [result.lastID, stageIdInt, 'pending', normHoursInt]
+          );
+        }
+      }
     }
     
     return this.findById(result.lastID);

@@ -247,18 +247,24 @@ export const createRequest = async (req, res) => {
       return res.status(400).json({ error: 'Product ID, stage, và materials là bắt buộc' });
     }
 
-    // Map stage name to stage_id
-    const stageMap = {
-      'RẬP': 1,
-      'CẮT': 2,
-      'MAY': 3,
-      'THIẾT_KẾ': 4,
-      'ĐÍNH_KẾT': 5
-    };
+    // Resolve stage to stage_id
+    let stageId = null;
+    
+    // If stage is a number, use it directly
+    if (!isNaN(stage)) {
+      stageId = parseInt(stage);
+    } else {
+      // Otherwise, look up by name in database
+      const { Stage } = await import('../models/Stage.js');
+      const stageRecord = await Stage.findByName(stage);
+      if (!stageRecord) {
+        return res.status(400).json({ error: `Invalid stage: ${stage}` });
+      }
+      stageId = stageRecord.id;
+    }
 
-    const stageId = stageMap[stage] || parseInt(stage) || null;
-    if (!stageId) {
-      return res.status(400).json({ error: 'Invalid stage' });
+    if (!stageId || stageId <= 0) {
+      return res.status(400).json({ error: 'Invalid stage ID' });
     }
 
     // Build reason string

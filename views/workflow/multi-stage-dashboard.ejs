@@ -300,27 +300,9 @@
       
       <div class="border-t pt-4">
         <label class="block text-sm font-medium text-gray-700 mb-3">Chọn các bộ phận làm song song</label>
-        <div class="space-y-2">
-          <label class="flex items-center">
-            <input type="checkbox" name="stages" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-            <span class="ml-2">RẬP (Giờ định mức: <input type="number" name="stage_hours_1" min="1" value="4" class="w-16 rounded border-gray-300">h)</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="stages" value="2" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-            <span class="ml-2">CẮT (Giờ định mức: <input type="number" name="stage_hours_2" min="1" value="3" class="w-16 rounded border-gray-300">h)</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="stages" value="3" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-            <span class="ml-2">MAY (Giờ định mức: <input type="number" name="stage_hours_3" min="1" value="6" class="w-16 rounded border-gray-300">h)</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="stages" value="4" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-            <span class="ml-2">THIẾT_KẾ (Giờ định mức: <input type="number" name="stage_hours_4" min="1" value="5" class="w-16 rounded border-gray-300">h)</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="stages" value="5" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-            <span class="ml-2">ĐÍNH_KẾT (Giờ định mức: <input type="number" name="stage_hours_5" min="1" value="8" class="w-16 rounded border-gray-300">h)</span>
-          </label>
+        <div id="createProductStagesContainer" class="space-y-2">
+          <!-- Stages will be loaded dynamically -->
+          <div class="text-sm text-gray-500">Đang tải danh sách bộ phận...</div>
         </div>
       </div>
       
@@ -341,13 +323,46 @@
 const authToken = '<%= typeof token !== "undefined" ? token : "" %>';
 
 // Show/hide create product modal
-function showCreateProductModal() {
+async function showCreateProductModal() {
   document.getElementById('createProductModal').classList.remove('hidden');
+  await loadStagesForCreateProduct();
 }
 
 function closeCreateProductModal() {
   document.getElementById('createProductModal').classList.add('hidden');
   document.getElementById('createProductForm').reset();
+}
+
+// Load stages dynamically from database
+async function loadStagesForCreateProduct() {
+  try {
+    const response = await fetch('/workflow/stages/list', {
+      headers: {
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load stages');
+
+    const result = await response.json();
+    const stages = result.data || [];
+    const container = document.getElementById('createProductStagesContainer');
+    
+    if (stages.length === 0) {
+      container.innerHTML = '<div class="text-sm text-gray-500">Chưa có bộ phận nào. Vui lòng tạo stages trong quản lý admin.</div>';
+      return;
+    }
+
+    container.innerHTML = stages.map(stage => `
+      <label class="flex items-center">
+        <input type="checkbox" name="stages" value="${stage.id}" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+        <span class="ml-2">${stage.stage_name} (Giờ định mức: <input type="number" name="stage_hours_${stage.id}" min="1" value="${stage.norm_hours}" class="w-16 rounded border-gray-300">h)</span>
+      </label>
+    `).join('');
+  } catch (error) {
+    console.error('Error loading stages:', error);
+    document.getElementById('createProductStagesContainer').innerHTML = '<div class="text-sm text-red-500">Lỗi tải danh sách bộ phận</div>';
+  }
 }
 
 // Create product and assign stages
@@ -398,7 +413,7 @@ document.getElementById('createProductForm').addEventListener('submit', async (e
       throw new Error('Product created but no ID returned');
     }
     
-    // Step 2: Assign selected stages
+    // Step 2: Assign selected stages with norm hours
     const assignResponse = await fetch('/workflow/assign-stages', {
       method: 'POST',
       headers: {
@@ -408,6 +423,7 @@ document.getElementById('createProductForm').addEventListener('submit', async (e
       body: JSON.stringify({
         productId: productId,
         stageIds: selectedStages,
+        stageNorms: stageHours, // Gửi kèm norm_hours cho từng stage
         userIds: [] // Admin sẽ gán workers sau
       })
     });
@@ -479,10 +495,18 @@ async function loadOverview() {
         const [stageName, stageId, workerCount] = stageDetail.split('||');
         const count = parseInt(workerCount) || 0;
         const bgColor = count > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600';
-        return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor}">
-                  ${stageName}
-                  <span class="ml-1 inline-flex items-center justify-center w-4 h-4 text-xs font-bold rounded-full ${count > 0 ? 'bg-green-200' : 'bg-gray-200'}">${count}</span>
-                </span>`;
+        const badgeId = `stage-${product.product_id}-${stageId}`;
+        return `<div class="relative inline-block group">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor} cursor-help" data-product-id="${product.product_id}" data-stage-id="${stageId}" data-stage-name="${stageName}">
+                    ${stageName}
+                    <span class="ml-1 inline-flex items-center justify-center w-4 h-4 text-xs font-bold rounded-full ${count > 0 ? 'bg-green-200' : 'bg-gray-200'}">${count}</span>
+                  </span>
+                  ${count > 0 ? `<div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs bg-gray-900 text-white rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50" id="${badgeId}">
+                    <div class="font-semibold mb-1">${stageName}</div>
+                    <div id="${badgeId}-workers">Đang tải...</div>
+                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>` : ''}
+                </div>`;
       }).join('');
       
       row.innerHTML = `
@@ -512,6 +536,52 @@ async function loadOverview() {
         </td>
       `;
       tbody.appendChild(row);
+
+      // Add event listeners for worker name tooltips
+      const stageBadges = row.querySelectorAll('[data-product-id][data-stage-id]');
+      stageBadges.forEach(badge => {
+        badge.addEventListener('mouseenter', async (e) => {
+          const productId = badge.getAttribute('data-product-id');
+          const stageId = badge.getAttribute('data-stage-id');
+          const stageName = badge.getAttribute('data-stage-name');
+          const tooltipId = `stage-${productId}-${stageId}`;
+          const tooltip = document.getElementById(tooltipId);
+          
+          if (!tooltip) return;
+          
+          const workersDiv = document.getElementById(`${tooltipId}-workers`);
+          if (!workersDiv) return;
+          
+          // Check if already loaded
+          if (workersDiv.textContent !== 'Đang tải...') return;
+          
+          try {
+            const response = await fetch(`/workflow/assigned-workers/${productId}/${stageId}`, {
+              headers: {
+                'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+              }
+            });
+            
+            if (!response.ok) throw new Error('Failed to fetch workers');
+            
+            const result = await response.json();
+            const workers = result.data || [];
+            
+            if (workers.length === 0) {
+              workersDiv.innerHTML = '<div class="text-yellow-200">Chưa có nhân viên</div>';
+            } else {
+              const workerNames = workers.map(w => {
+                const statusEmoji = w.status === 'working' ? '▶️' : w.status === 'completed' ? '✅' : '⏸️';
+                return `<div class="text-gray-100">${statusEmoji} ${w.full_name || w.username}</div>`;
+              }).join('');
+              workersDiv.innerHTML = workerNames;
+            }
+          } catch (error) {
+            console.error('Error loading workers:', error);
+            workersDiv.innerHTML = '<div class="text-red-200">Lỗi tải dữ liệu</div>';
+          }
+        });
+      });
     });
     
   } catch (error) {

@@ -1198,3 +1198,29 @@ export const createCustomInboundRecord = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+/**
+ * Get messages/comments for a material request
+ */
+export const getMaterialRequestMessages = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const messages = await dbAll(
+      `SELECT mrm.*, u.full_name, u.role 
+       FROM material_request_messages mrm 
+       LEFT JOIN users u ON mrm.user_id = u.id 
+       WHERE mrm.request_id = ? 
+       ORDER BY mrm.created_at ASC`,
+      [requestId]
+    );
+
+    res.json({
+      success: true,
+      data: messages || []
+    });
+
+  } catch (error) {
+    console.error('Error getting material request messages:', error);
+    res.status(500).json({ error: error.message });
+  }
+};

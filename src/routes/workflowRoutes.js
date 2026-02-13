@@ -113,6 +113,9 @@ router.get('/stage/:stageId/workers/stats', workflowController.getStageWorkersSt
 // Update material request (comment, status)
 router.post('/material-request/:requestId/update', workflowController.updateMaterialRequest);
 
+// Get material request comments/messages
+router.get('/material-request/:requestId/messages', workflowController.getMaterialRequestMessages);
+
 // Export records
 router.get('/export-records', workflowController.getExportRecords);
 router.get('/export-records/:recordId', workflowController.getExportRecordDetail);

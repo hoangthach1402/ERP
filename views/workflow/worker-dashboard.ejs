@@ -458,11 +458,15 @@ async function loadMaterialRequests(productId, stageId) {
             <p class="text-xs text-gray-600"><strong>Trạng thái:</strong> ${req.status}</p>
             ${req.purchased_by_name ? `<p class="text-xs text-gray-600"><strong>Xử lý bởi:</strong> ${req.purchased_by_name}</p>` : ''}
             ${req.expected_delivery_date ? `<p class="text-xs text-gray-600"><strong>Dự kiến giao:</strong> ${new Date(req.expected_delivery_date).toLocaleDateString('vi-VN')}</p>` : ''}
-            <textarea id="commentInput-${req.id}" class="w-full p-2 text-xs border rounded" placeholder="Thêm bình luận..." onclick="event.stopPropagation()"></textarea>
-            <button onclick="event.stopPropagation(); addMaterialRequestComment(${req.id})" class="w-full px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
-              Gửi Bình Luận
-            </button>
-            <div id="comments-${req.id}" class="text-xs space-y-1 max-h-24 overflow-y-auto"></div>
+            <div class="bg-gray-50 p-2 rounded border border-gray-200">
+              <div id="comments-${req.id}" class="text-xs space-y-2 max-h-40 overflow-y-auto mb-2">
+                <p class="text-gray-400 italic text-center py-2">Đang tải bình luận...</p>
+              </div>
+              <textarea id="commentInput-${req.id}" class="w-full p-2 text-xs border rounded" placeholder="Thêm bình luận..." onclick="event.stopPropagation()"></textarea>
+              <button onclick="event.stopPropagation(); addMaterialRequestComment(${req.id})" class="w-full mt-1 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                Gửi Bình Luận
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -477,11 +481,58 @@ async function loadMaterialRequests(productId, stageId) {
   }
 }
 
-// Expand/collapse material request details
-function expandMaterialRequest(element, requestId) {
+// Expand/collapse material request details and load comments
+async function expandMaterialRequest(element, requestId) {
   const detail = document.getElementById(`materialRequestDetail-${requestId}`);
   if (detail) {
-    detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+    if (detail.style.display === 'none') {
+      detail.style.display = 'block';
+      // Load comments when expanding
+      await loadMaterialRequestComments(requestId);
+    } else {
+      detail.style.display = 'none';
+    }
+  }
+}
+
+// Load and display comments for a material request
+async function loadMaterialRequestComments(requestId) {
+  try {
+    const response = await fetch(`/workflow/material-request/${requestId}/messages`, {
+      headers: { 'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load comments');
+    const data = await response.json();
+    const comments = data.data || [];
+
+    const commentsDiv = document.getElementById(`comments-${requestId}`);
+    if (!commentsDiv) return;
+
+    if (comments.length === 0) {
+      commentsDiv.innerHTML = '<p class="text-gray-500 italic">Chưa có bình luận</p>';
+      return;
+    }
+
+    commentsDiv.innerHTML = comments.map(comment => {
+      const date = new Date(comment.created_at);
+      const timeStr = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      const roleLabel = comment.role === 'THU_MUA' ? '👨‍💼 Thu Mua' : comment.role === 'WORKER' ? '🔧 Công Nhân' : '👤 ' + comment.role;
+      return `
+        <div class="border-l-2 border-blue-400 pl-2 py-1">
+          <div class="text-xs font-semibold text-blue-600">${roleLabel} - ${comment.full_name}</div>
+          <div class="text-xs text-gray-700 mt-0.5">${comment.message}</div>
+          <div class="text-xs text-gray-400">${timeStr}</div>
+        </div>
+      `;
+    }).join('');
+
+  } catch (error) {
+    console.error('Error loading comments:', error);
+    const commentsDiv = document.getElementById(`comments-${requestId}`);
+    if (commentsDiv) {
+      commentsDiv.innerHTML = `<p class="text-red-500 text-xs">Lỗi: ${error.message}</p>`;
+    }
   }
 }
 
@@ -509,8 +560,9 @@ async function addMaterialRequestComment(requestId) {
 
     commentInput.value = '';
     alert('Bình luận đã được thêm!');
-    // Reload tasks to refresh material requests
-    loadTasks(currentStatus);
+    
+    // Reload comments immediately
+    await loadMaterialRequestComments(requestId);
 
   } catch (error) {
     console.error('Error adding comment:', error);

@@ -146,18 +146,27 @@ export class ProductActiveStage {
         p.id as product_id,
         p.product_code,
         p.product_name,
-        GROUP_CONCAT(DISTINCT s.stage_name) as active_stages,
-        GROUP_CONCAT(s.stage_name || '||' || s.id || '||' || 
+        (SELECT GROUP_CONCAT(DISTINCT s2.stage_name) 
+         FROM product_active_stages pas2 
+         JOIN stages s2 ON pas2.stage_id = s2.id 
+         WHERE pas2.product_id = p.id AND pas2.status = 'active') as active_stages,
+        (SELECT GROUP_CONCAT(s2.stage_name || '||' || s2.id || '||' || 
           IFNULL((SELECT COUNT(*) FROM product_stage_workers psw2 
-                  WHERE psw2.product_id = p.id AND psw2.stage_id = s.id), 0), '##') as stage_details,
-        COUNT(DISTINCT pas.stage_id) as stage_count,
+                  WHERE psw2.product_id = p.id AND psw2.stage_id = s2.id), 0), '##')
+         FROM product_active_stages pas2 
+         JOIN stages s2 ON pas2.stage_id = s2.id 
+         WHERE pas2.product_id = p.id AND pas2.status = 'active') as stage_details,
+        (SELECT COUNT(DISTINCT pas2.stage_id) 
+         FROM product_active_stages pas2 
+         WHERE pas2.product_id = p.id AND pas2.status = 'active') as stage_count,
         COUNT(DISTINCT psw.user_id) as total_workers,
         COUNT(DISTINCT CASE WHEN psw.status = 'working' THEN psw.user_id END) as working_now
       FROM products p
-      JOIN product_active_stages pas ON p.id = pas.product_id
-      JOIN stages s ON pas.stage_id = s.id
-      LEFT JOIN product_stage_workers psw ON p.id = psw.product_id AND pas.stage_id = psw.stage_id
-      WHERE pas.status = 'active'
+      LEFT JOIN product_stage_workers psw ON p.id = psw.product_id
+      WHERE EXISTS (
+        SELECT 1 FROM product_active_stages pas 
+        WHERE pas.product_id = p.id AND pas.status = 'active'
+      )
       GROUP BY p.id
       ORDER BY p.created_at DESC
     `);
@@ -254,6 +263,24 @@ export class ProductActiveStage {
     `, [productId, stageId]);
 
     return result.pending_count === 0;
+  }
+
+  /**
+   * Lấy danh sách workers của một stage để hiển thị trên hover
+   */
+  static async getStageWorkers(productId, stageId) {
+    return dbAll(`
+      SELECT 
+        psw.id,
+        u.full_name,
+        u.username,
+        psw.status,
+        psw.hours_worked
+      FROM product_stage_workers psw
+      JOIN users u ON psw.user_id = u.id
+      WHERE psw.product_id = ? AND psw.stage_id = ?
+      ORDER BY u.full_name ASC
+    `, [productId, stageId]);
   }
 }
 

@@ -5,7 +5,7 @@ import { notifyNewProductRap } from '../services/telegramRapNotification.js';
 
 export const createProduct = async (req, res) => {
   try {
-    const { product_code, product_name, stage_1_hours, stage_2_hours, stage_3_hours, stage_4_hours, stage_5_hours } = req.body;
+    const { product_code, product_name, stageHours } = req.body;
 
     // Validation
     if (!product_code || !product_name) {
@@ -31,19 +31,13 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ error: 'Mã sản phẩm này đã tồn tại' });
     }
 
-    // Collect stage hours
-    const stageHours = {
-      1: stage_1_hours || 0,
-      2: stage_2_hours || 0,
-      3: stage_3_hours || 0,
-      4: stage_4_hours || 0,
-      5: stage_5_hours || 0
-    };
+    // Use provided stageHours or empty object
+    const normalizedStageHours = stageHours || {};
 
     const product = await Product.create({
       product_code: code,
       product_name: name,
-      stageHours
+      stageHours: normalizedStageHours
     });
 
     await ActivityLog.log(req.user.id, 'CREATE_PRODUCT', {
