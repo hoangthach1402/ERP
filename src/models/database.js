@@ -71,6 +71,9 @@ async function initializeTables() {
       const hasNormHours = taskColumns.some(col => col.name === 'norm_hours');
       const hasPendingReason = taskColumns.some(col => col.name === 'pending_reason');
 
+      const activeStageColumns = await dbAll("PRAGMA table_info(product_active_stages)");
+      const hasActiveStageNormHours = activeStageColumns.some(col => col.name === 'norm_hours');
+
       if (!hasNormHours) {
         console.log('🔧 Adding norm_hours column to product_stage_tasks...');
         await dbRun('ALTER TABLE product_stage_tasks ADD COLUMN norm_hours INTEGER DEFAULT 0');
@@ -82,6 +85,59 @@ async function initializeTables() {
         await dbRun('ALTER TABLE product_stage_tasks ADD COLUMN pending_reason TEXT');
         console.log('✓ pending_reason column added');
       }
+
+      if (!hasActiveStageNormHours) {
+        console.log('🔧 Adding norm_hours column to product_active_stages...');
+        await dbRun('ALTER TABLE product_active_stages ADD COLUMN norm_hours INTEGER');
+        console.log('✓ norm_hours column added');
+      }
+
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS export_records (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          description TEXT,
+          shipping_address TEXT NOT NULL,
+          approved_by TEXT,
+          created_by INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (created_by) REFERENCES users(id)
+        )
+      `);
+
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS export_record_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          record_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          product_note TEXT,
+          FOREIGN KEY (record_id) REFERENCES export_records(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products(id)
+        )
+      `);
+
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS inbound_records (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          product_id INTEGER NOT NULL,
+          description TEXT,
+          created_by INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (product_id) REFERENCES products(id),
+          FOREIGN KEY (created_by) REFERENCES users(id)
+        )
+      `);
+
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS inbound_record_stages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          record_id INTEGER NOT NULL,
+          stage_id INTEGER NOT NULL,
+          norm_hours INTEGER NOT NULL,
+          FOREIGN KEY (record_id) REFERENCES inbound_records(id) ON DELETE CASCADE,
+          FOREIGN KEY (stage_id) REFERENCES stages(id)
+        )
+      `);
       
       // Ensure admin user exists
       const adminExists = await dbGet('SELECT id FROM users WHERE username = ?', ['admin']);
@@ -204,6 +260,7 @@ async function initializeTables() {
         status TEXT DEFAULT 'active',
         started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         completed_at DATETIME,
+        norm_hours INTEGER,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
         FOREIGN KEY (stage_id) REFERENCES stages(id),
         UNIQUE(product_id, stage_id)
@@ -228,6 +285,53 @@ async function initializeTables() {
         UNIQUE(product_id, stage_id, user_id)
       )
     `);
+
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS export_records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        shipping_address TEXT NOT NULL,
+        approved_by TEXT,
+        created_by INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by) REFERENCES users(id)
+      )
+    `);
+
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS export_record_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        record_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        product_note TEXT,
+        FOREIGN KEY (record_id) REFERENCES export_records(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id)
+      )
+    `);
+
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS inbound_records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        description TEXT,
+        created_by INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products(id),
+        FOREIGN KEY (created_by) REFERENCES users(id)
+      )
+    `);
+
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS inbound_record_stages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        record_id INTEGER NOT NULL,
+        stage_id INTEGER NOT NULL,
+        norm_hours INTEGER NOT NULL,
+        FOREIGN KEY (record_id) REFERENCES inbound_records(id) ON DELETE CASCADE,
+        FOREIGN KEY (stage_id) REFERENCES stages(id)
+      )
+    `);
     
     // Create indexes
     await dbRun('CREATE INDEX IF NOT EXISTS idx_pas_product ON product_active_stages(product_id)');
@@ -236,6 +340,11 @@ async function initializeTables() {
     await dbRun('CREATE INDEX IF NOT EXISTS idx_psw_product_stage ON product_stage_workers(product_id, stage_id)');
     await dbRun('CREATE INDEX IF NOT EXISTS idx_psw_user ON product_stage_workers(user_id)');
     await dbRun('CREATE INDEX IF NOT EXISTS idx_psw_status ON product_stage_workers(status)');
+
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_export_records_created_at ON export_records(created_at)');
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_export_record_items_record ON export_record_items(record_id)');
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_inbound_records_created_at ON inbound_records(created_at)');
+    await dbRun('CREATE INDEX IF NOT EXISTS idx_inbound_record_stages_record ON inbound_record_stages(record_id)');
     
     console.log('✓ Multi-stage and multi-worker tables created');
     console.log('✅ Database initialization completed!');

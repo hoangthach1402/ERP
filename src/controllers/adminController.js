@@ -1,5 +1,5 @@
 import User from '../models/User.js';
-import { ProductStageTask } from '../models/Stage.js';
+import { Stage, ProductStageTask } from '../models/Stage.js';
 import ActivityLog from '../models/ActivityLog.js';
 
 export const getAdminDashboard = async (req, res) => {
@@ -21,10 +21,12 @@ export const getAdminDashboard = async (req, res) => {
 
     const users = await User.getAll();
     const delayedTasks = await ProductStageTask.getDelayedTasks();
+    const stages = await Stage.getAll();
 
     res.render('admin/dashboard', {
       users,
       delayedTasks,
+      stages,
       user: req.session.user,
       role: req.user.role
     });
@@ -138,9 +140,110 @@ export const deactivateUser = async (req, res) => {
   }
 };
 
+export const createStage = async (req, res) => {
+  try {
+    const { stage_name, norm_hours, description } = req.body;
+
+    if (!stage_name || !norm_hours) {
+      return res.status(400).json({ error: 'Stage name và định mức là bắt buộc' });
+    }
+
+    const stage = await Stage.create({
+      stage_name: stage_name.trim(),
+      norm_hours: Number(norm_hours),
+      description: description?.trim()
+    });
+
+    await ActivityLog.log(req.user.id, 'CREATE_STAGE', {
+      stage_id: stage.id,
+      stage_name: stage.stage_name
+    });
+
+    res.json({ success: true, stage });
+  } catch (error) {
+    console.error('Create stage error:', error.message);
+    if (error.message.includes('UNIQUE')) {
+      return res.status(400).json({ error: 'Tên stage đã tồn tại' });
+    }
+    res.status(500).json({ error: 'Error creating stage' });
+  }
+};
+
+export const updateStage = async (req, res) => {
+  try {
+    const { stageId, stage_name, norm_hours, description } = req.body;
+
+    if (!stageId || !stage_name || !norm_hours) {
+      return res.status(400).json({ error: 'Thiếu thông tin cập nhật' });
+    }
+
+    const stage = await Stage.updateStage(stageId, {
+      stage_name: stage_name.trim(),
+      norm_hours: Number(norm_hours),
+      description: description?.trim()
+    });
+
+    await ActivityLog.log(req.user.id, 'UPDATE_STAGE', {
+      stage_id: stage.id,
+      stage_name: stage.stage_name
+    });
+
+    res.json({ success: true, stage });
+  } catch (error) {
+    console.error('Update stage error:', error.message);
+    res.status(500).json({ error: 'Error updating stage' });
+  }
+};
+
+export const deleteStage = async (req, res) => {
+  try {
+    const { stageId } = req.body;
+
+    if (!stageId) {
+      return res.status(400).json({ error: 'Thiếu stageId' });
+    }
+
+    await Stage.deleteWithCascade(stageId);
+
+    await ActivityLog.log(req.user.id, 'DELETE_STAGE', {
+      stage_id: stageId
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete stage error:', error.message);
+    res.status(500).json({ error: error.message || 'Error deleting stage' });
+  }
+};
+
+export const reorderStages = async (req, res) => {
+  try {
+    const { stageIds } = req.body;
+
+    if (!Array.isArray(stageIds) || stageIds.length === 0) {
+      return res.status(400).json({ error: 'Danh sách stage không hợp lệ' });
+    }
+
+    await Stage.reorder(stageIds);
+
+    await ActivityLog.log(req.user.id, 'REORDER_STAGES', {
+      stage_ids: stageIds
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Reorder stages error:', error.message);
+    res.status(500).json({ error: 'Error reordering stages' });
+  }
+};
+
 export default {
   getAdminDashboard,
   createUser,
   updateUserRole,
-  deactivateUser
+  deactivateUser,
+  createStage,
+  updateStage,
+  deleteStage,
+  reorderStages
 };

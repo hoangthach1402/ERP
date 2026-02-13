@@ -33,6 +33,9 @@
   <button onclick="showTab('users')" id="usersTab" class="py-4 px-6 font-semibold text-purple-600 border-b-2 border-purple-600">
     <i class="fas fa-users mr-2"></i>Người Dùng
   </button>
+  <button onclick="showTab('stages')" id="stagesTab" class="py-4 px-6 font-semibold text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
+    <i class="fas fa-layer-group mr-2"></i>Stages
+  </button>
   <button onclick="showTab('settings')" id="settingsTab" class="py-4 px-6 font-semibold text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
     <i class="fas fa-cog mr-2"></i>Cài Đặt
   </button>
@@ -60,6 +63,7 @@
         <option value="MAY">May</option>
         <option value="THIET_KE">Thiết Kế Đắp</option>
         <option value="DINH_KET">Đính Kết</option>
+        <option value="KCS">KCS</option>
         <option value="THU_MUA">Thu Mua</option>
         <option value="ADMIN">Admin</option>
       </select>
@@ -101,6 +105,7 @@
                     <option value="MAY" <%= user.role === 'MAY' ? 'selected' : '' %>>May</option>
                     <option value="THIET_KE" <%= user.role === 'THIET_KE' ? 'selected' : '' %>>Thiết Kế</option>
                     <option value="DINH_KET" <%= user.role === 'DINH_KET' ? 'selected' : '' %>>Đính Kết</option>
+                    <option value="KCS" <%= user.role === 'KCS' ? 'selected' : '' %>>KCS</option>
                     <option value="THU_MUA" <%= user.role === 'THU_MUA' ? 'selected' : '' %>>Thu Mua</option>
                     <option value="ADMIN" <%= user.role === 'ADMIN' ? 'selected' : '' %>>Admin</option>
                   </select>
@@ -130,6 +135,51 @@
   </div>
 </div>
 
+<!-- Stages Tab -->
+<div id="stagesTab-content" class="tab-content hidden">
+  <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Tạo Stage Mới</h2>
+    <form id="createStageForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <input type="text" name="stage_name" id="stage_name" placeholder="Tên stage" required
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+      <input type="number" name="norm_hours" id="norm_hours" placeholder="Định mức (giờ)" min="1" required
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+      <input type="text" name="description" id="description" placeholder="Mô tả (tùy chọn)"
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+      <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition md:col-span-3">
+        <i class="fas fa-plus mr-2"></i>Tạo Stage
+      </button>
+    </form>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-gray-800">Danh Sách Stages (kéo thả để sắp thứ tự)</h2>
+      <span class="text-xs text-gray-500">Thay đổi thứ tự sẽ tự lưu</span>
+    </div>
+
+    <div id="stageList" class="space-y-2">
+      <% if (stages && stages.length > 0) { %>
+        <% stages.forEach(stage => { %>
+          <div class="stage-item border rounded-lg p-3 bg-gray-50 flex flex-col gap-2" data-id="<%= stage.id %>" draggable="true">
+            <div class="flex items-center gap-3">
+              <span class="drag-handle cursor-move text-gray-400" title="Kéo thả để sắp thứ tự">⋮⋮</span>
+              <input type="text" class="stage-name-input flex-1 px-2 py-1 border rounded" value="<%= stage.stage_name %>">
+              <input type="number" class="stage-hours-input w-28 px-2 py-1 border rounded" min="1" value="<%= stage.norm_hours %>">
+              <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="updateStage(<%= stage.id %>)">Lưu</button>
+              <button class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="deleteStage(<%= stage.id %>)">Xóa</button>
+            </div>
+            <input type="text" class="stage-desc-input px-2 py-1 border rounded" placeholder="Mô tả" value="<%= stage.description || '' %>">
+          </div>
+        <% }); %>
+      <% } else { %>
+        <p class="text-gray-500 text-sm">Chưa có stage nào.</p>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+
 <!-- Settings Tab -->
 <div id="settingsTab-content" class="tab-content hidden">
   <div class="bg-white rounded-lg shadow p-6">
@@ -145,7 +195,9 @@ function showTab(tabName) {
   document.querySelectorAll('[id$="-content"]').forEach(tab => tab.classList.add('hidden'));
   
   // Show selected tab
-  const contentId = tabName === 'users' ? 'usersTab-content' : 'settingsTab-content';
+  const contentId = tabName === 'users'
+    ? 'usersTab-content'
+    : (tabName === 'stages' ? 'stagesTab-content' : 'settingsTab-content');
   document.getElementById(contentId).classList.remove('hidden');
   
   // Update tab buttons
@@ -158,6 +210,12 @@ function showTab(tabName) {
   document.getElementById('settingsTab').classList.toggle('border-transparent', tabName !== 'settings');
   document.getElementById('settingsTab').classList.toggle('text-purple-600', tabName === 'settings');
   document.getElementById('settingsTab').classList.toggle('text-gray-600', tabName !== 'settings');
+
+  document.getElementById('stagesTab').classList.toggle('border-purple-600', tabName === 'stages');
+  document.getElementById('stagesTab').classList.toggle('border-transparent', tabName !== 'stages');
+  document.getElementById('stagesTab').classList.toggle('text-purple-600', tabName === 'stages');
+  document.getElementById('stagesTab').classList.toggle('text-gray-600', tabName !== 'stages');
+
 }
 
 // Prevent form from being submitted via query parameters (security)
@@ -264,6 +322,159 @@ document.getElementById('createUserForm')?.addEventListener('submit', async (e) 
     submitButton.disabled = false;
     submitButton.innerHTML = originalText;
   }
+});
+
+document.getElementById('createStageForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const stage_name = document.getElementById('stage_name').value.trim();
+  const norm_hours = document.getElementById('norm_hours').value;
+  const description = document.getElementById('description').value.trim();
+
+  if (!stage_name || !norm_hours) {
+    alert('✗ Vui lòng nhập tên stage và định mức');
+    return;
+  }
+
+  try {
+    const response = await fetch('/admin/stage/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage_name, norm_hours, description })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      alert('✓ Stage đã được tạo');
+      location.reload();
+    } else {
+      alert('✗ ' + (data.error || 'Lỗi tạo stage'));
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('✗ Lỗi server');
+  }
+});
+
+async function updateStage(stageId) {
+  const stageItem = document.querySelector(`.stage-item[data-id="${stageId}"]`);
+  const stage_name = stageItem.querySelector('.stage-name-input').value.trim();
+  const norm_hours = stageItem.querySelector('.stage-hours-input').value;
+  const description = stageItem.querySelector('.stage-desc-input').value.trim();
+
+  if (!stage_name || !norm_hours) {
+    alert('✗ Vui lòng nhập tên stage và định mức');
+    return;
+  }
+
+  try {
+    const response = await fetch('/admin/stage/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stageId, stage_name, norm_hours, description })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      alert('✓ Stage đã được cập nhật');
+    } else {
+      alert('✗ ' + (data.error || 'Lỗi cập nhật stage'));
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('✗ Lỗi server');
+  }
+}
+
+async function deleteStage(stageId) {
+  if (!confirm('Bạn có chắc chắn muốn xóa stage này? Dữ liệu liên quan sẽ bị xóa.')) return;
+
+  try {
+    const response = await fetch('/admin/stage/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stageId })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      alert('✓ Stage đã được xóa');
+      location.reload();
+    } else {
+      alert('✗ ' + (data.error || 'Lỗi xóa stage'));
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('✗ Lỗi server');
+  }
+}
+
+function initStageDragAndDrop() {
+  const stageList = document.getElementById('stageList');
+  if (!stageList) return;
+
+  let draggingItem = null;
+
+  stageList.querySelectorAll('.stage-item').forEach(item => {
+    const handle = item.querySelector('.drag-handle');
+    item.setAttribute('draggable', 'false');
+
+    if (handle) {
+      handle.setAttribute('draggable', 'true');
+      handle.addEventListener('dragstart', (event) => {
+        draggingItem = item;
+        item.classList.add('opacity-60');
+        event.dataTransfer.effectAllowed = 'move';
+      });
+
+      handle.addEventListener('dragend', () => {
+        if (draggingItem) {
+          draggingItem.classList.remove('opacity-60');
+        }
+        draggingItem = null;
+      });
+    }
+
+    item.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    });
+
+    item.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      if (!draggingItem || draggingItem === item) return;
+
+      const rect = item.getBoundingClientRect();
+      const insertBefore = event.clientY < rect.top + rect.height / 2;
+      if (insertBefore) {
+        stageList.insertBefore(draggingItem, item);
+      } else {
+        stageList.insertBefore(draggingItem, item.nextSibling);
+      }
+
+      const stageIds = Array.from(stageList.querySelectorAll('.stage-item')).map(el => Number(el.dataset.id));
+
+      try {
+        const response = await fetch('/admin/stage/reorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stageIds })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          alert('✗ ' + (data.error || 'Lỗi sắp thứ tự stage'));
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('✗ Lỗi server');
+      }
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initStageDragAndDrop();
 });
 
 async function updateUserRole(userId, role) {

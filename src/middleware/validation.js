@@ -50,7 +50,7 @@ export const validateUserCreation = (req, res, next) => {
     }
 
     // Validate role - only allowed roles
-    const allowedRoles = ['RAP', 'CAT', 'MAY', 'THIET_KE', 'DINH_KET', 'ADMIN'];
+    const allowedRoles = ['RAP', 'CAT', 'MAY', 'THIET_KE', 'DINH_KET', 'KCS', 'ADMIN', 'THU_MUA'];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ error: `Invalid role. Allowed roles: ${allowedRoles.join(', ')}` });
     }
@@ -81,7 +81,7 @@ export const validateRoleUpdate = (req, res, next) => {
       return res.status(400).json({ error: 'Invalid user ID format' });
     }
 
-    const allowedRoles = ['RAP', 'CAT', 'MAY', 'THIET_KE', 'DINH_KET', 'ADMIN'];
+    const allowedRoles = ['RAP', 'CAT', 'MAY', 'THIET_KE', 'DINH_KET', 'KCS', 'ADMIN', 'THU_MUA'];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ error: `Invalid role. Allowed roles: ${allowedRoles.join(', ')}` });
     }

@@ -4,6 +4,9 @@ import { Product } from '../models/Product.js';
 import { Stage } from '../models/Stage.js';
 import { ActivityLog } from '../models/ActivityLog.js';
 import { MaterialRequest } from '../models/MaterialRequest.js';
+import { ExportRecord } from '../models/ExportRecord.js';
+import { InboundRecord } from '../models/InboundRecord.js';
+import { Warehouse } from '../models/Warehouse.js';
 import User from '../models/User.js';
 import { dbGet, dbAll, dbRun } from '../models/database.js';
 
@@ -77,7 +80,7 @@ export const renderProductStageDetails = async (req, res) => {
  */
 export const assignStageToProduct = async (req, res) => {
   try {
-    const { productId, stageIds, userIds } = req.body;
+    const { productId, stageIds, userIds, stageNorms, allowRework } = req.body;
 
     if (!productId || !stageIds || !Array.isArray(stageIds)) {
       return res.status(400).json({ error: 'Product ID and stage IDs array required' });
@@ -91,8 +94,12 @@ export const assignStageToProduct = async (req, res) => {
     const results = [];
 
     for (const stageId of stageIds) {
+      const normHours = stageNorms && stageNorms[stageId] ? Number(stageNorms[stageId]) : null;
       // Kích hoạt stage
-      const activeStage = await ProductActiveStage.activateStage(productId, stageId);
+      const activeStage = await ProductActiveStage.activateStage(productId, stageId, {
+        norm_hours: normHours,
+        allowRework: Boolean(allowRework)
+      });
       
       // Nếu có userIds, gán workers
       if (userIds && Array.isArray(userIds) && userIds.length > 0) {
@@ -536,6 +543,239 @@ export const getMultiStageOverview = async (req, res) => {
   }
 };
 
+
+/**
+ * Lấy danh sách tất cả stages
+ */
+export const getStagesList = async (req, res) => {
+  try {
+    const stages = await Stage.getAll();
+    res.json({ success: true, data: stages });
+  } catch (error) {
+    console.error('Error getting stages list:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Lấy danh sách sản phẩm (phục vụ nhập hàng)
+ */
+export const getProductsList = async (req, res) => {
+  try {
+    const products = await Product.getAll();
+    res.json({ success: true, data: products });
+  } catch (error) {
+    console.error('Error getting products list:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Tạo biên bản xuất xưởng
+ */
+export const createExportRecord = async (req, res) => {
+  try {
+    const { title, description, shipping_address, approved_by, warehouseItemIds, customItems } = req.body;
+
+    if (!title || !shipping_address) {
+      return res.status(400).json({ error: 'Thiếu thông tin biên bản xuất' });
+    }
+
+    if ((!warehouseItemIds || warehouseItemIds.length === 0) && (!customItems || customItems.length === 0)) {
+      return res.status(400).json({ error: 'Cần chọn ít nhất một sản phẩm hoặc thêm mục tự do' });
+    }
+
+    // Tạo biên bản xuất
+    const record = await ExportRecord.create({
+      title,
+      description,
+      shipping_address,
+      approved_by,
+      created_by: req.user.id,
+      warehouseItemIds: warehouseItemIds || [],
+      customItems: customItems || []
+    });
+
+    // Đánh dấu warehouse items đã xuất
+    if (warehouseItemIds && warehouseItemIds.length > 0) {
+      await Warehouse.markAsExported(warehouseItemIds, record.id);
+    }
+
+    await ActivityLog.log(req.user.id, 'CREATE_EXPORT_RECORD', {
+      title,
+      item_count: (warehouseItemIds?.length || 0) + (customItems?.length || 0)
+    });
+
+    res.json({ success: true, data: record });
+  } catch (error) {
+    console.error('Error creating export record:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Lấy danh sách biên bản xuất
+ */
+export const getExportRecords = async (req, res) => {
+  try {
+    const records = await ExportRecord.getAll();
+    res.json({ success: true, data: records });
+  } catch (error) {
+    console.error('Error getting export records:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Lấy chi tiết biên bản xuất
+ */
+export const getExportRecordDetail = async (req, res) => {
+  try {
+    const record = await ExportRecord.getById(req.params.recordId);
+    if (!record) return res.status(404).json({ error: 'Record not found' });
+    res.json({ success: true, data: record });
+  } catch (error) {
+    console.error('Error getting export record detail:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Render bản in biên bản xuất (A5)
+ */
+export const renderExportRecordPrint = async (req, res) => {
+  try {
+    const record = await ExportRecord.getById(req.params.recordId);
+    if (!record) return res.status(404).render('error', { error: 'Record not found' });
+
+    res.render('workflow/export-record-print', {
+      title: 'Biên bản xuất xưởng',
+      record
+    });
+  } catch (error) {
+    console.error('Error rendering export record print:', error);
+    res.status(500).render('error', { error: error.message });
+  }
+};
+
+/**
+ * Tạo nhập hàng (sửa chữa) và kích hoạt staging
+ */
+export const createInboundRecord = async (req, res) => {
+  try {
+    const { productId, description, stages } = req.body;
+
+    if (!productId || !Array.isArray(stages) || stages.length === 0) {
+      return res.status(400).json({ error: 'Thiếu thông tin nhập hàng' });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const inboundRecord = await InboundRecord.create({
+      product_id: productId,
+      description,
+      created_by: req.user.id,
+      stages: stages.map(stage => ({
+        stage_id: stage.stage_id,
+        norm_hours: Number(stage.norm_hours)
+      }))
+    });
+
+    for (const stage of stages) {
+      await ProductActiveStage.activateStage(productId, stage.stage_id, {
+        norm_hours: Number(stage.norm_hours),
+        allowRework: true
+      });
+    }
+
+    await ActivityLog.log(req.user.id, 'CREATE_INBOUND_RECORD', {
+      product_id: productId,
+      stage_count: stages.length
+    });
+
+    res.json({ success: true, data: inboundRecord });
+  } catch (error) {
+    console.error('Error creating inbound record:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Lấy danh sách nhập hàng
+ */
+export const getInboundRecords = async (req, res) => {
+  try {
+    const records = await InboundRecord.getAll();
+    res.json({ success: true, data: records });
+  } catch (error) {
+    console.error('Error getting inbound records:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Lấy danh sách sản phẩm đã hoàn thành stage (TỪ KHO HÀNG)
+ */
+export const getCompletedProductsSummary = async (req, res) => {
+  try {
+    // Lấy toàn bộ inventory từ kho (cả products và custom items)
+    const data = await Warehouse.getAvailableInventory();
+
+    res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    console.error('Error getting warehouse inventory:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Lấy chi tiết các stage đã hoàn thành của một sản phẩm
+ */
+export const getCompletedProductDetails = async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const stages = await ProductActiveStage.getCompletedStagesByProduct(productId);
+    const workers = await ProductActiveStage.getCompletedStageWorkersByProduct(productId);
+
+    const workersByStage = workers.reduce((acc, worker) => {
+      if (!acc[worker.stage_id]) acc[worker.stage_id] = [];
+      acc[worker.stage_id].push(worker);
+      return acc;
+    }, {});
+
+    const stagesWithWorkers = stages.map(stage => ({
+      ...stage,
+      workers: workersByStage[stage.stage_id] || []
+    }));
+
+    const totalNormHours = stages.reduce((sum, stage) => sum + (stage.norm_hours || 0), 0);
+
+    res.json({
+      success: true,
+      data: {
+        product,
+        total_norm_hours: totalNormHours,
+        stages: stagesWithWorkers
+      }
+    });
+  } catch (error) {
+    console.error('Error getting completed product details:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 /**
  * Lấy thống kê workers theo stage
  */
@@ -724,11 +964,23 @@ export const updateStageNormHours = async (req, res) => {
       return res.status(404).json({ error: 'Stage not found' });
     }
 
-    // Update norm hours in stages table
-    await dbRun(
-      'UPDATE stages SET norm_hours = ? WHERE id = ?',
-      [norm_hours, stageId]
+    const activeStage = await dbGet(
+      'SELECT id FROM product_active_stages WHERE product_id = ? AND stage_id = ?',
+      [productId, stageId]
     );
+
+    if (activeStage) {
+      await dbRun(
+        'UPDATE product_active_stages SET norm_hours = ? WHERE id = ?',
+        [norm_hours, activeStage.id]
+      );
+    } else {
+      // Fallback to update default in stages table
+      await dbRun(
+        'UPDATE stages SET norm_hours = ? WHERE id = ?',
+        [norm_hours, stageId]
+      );
+    }
 
     // Log activity
     await ActivityLog.log(req.user.id, 'update_norm_hours', 
@@ -864,6 +1116,85 @@ export const updateMaterialRequest = async (req, res) => {
 
   } catch (error) {
     console.error('Error updating material request:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Thêm custom item vào kho (không phải product)
+ */
+export const addCustomItemToWarehouse = async (req, res) => {
+  try {
+    const { item_type, item_name, item_description, quantity } = req.body;
+
+    if (!item_type || !item_name) {
+      return res.status(400).json({ error: 'Item type and name required' });
+    }
+
+    const result = await Warehouse.addCustomItem(item_type, item_name, item_description, quantity || 1);
+
+    await ActivityLog.log(req.user.id, 'ADD_CUSTOM_ITEM_TO_WAREHOUSE', {
+      item_type,
+      item_name
+    });
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error adding custom item to warehouse:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Tạo inbound record cho custom item (không có product)
+ */
+export const createCustomInboundRecord = async (req, res) => {
+  try {
+    const { item_type, item_name, item_description, quantity, stages } = req.body;
+
+    if (!item_type || !item_name || !Array.isArray(stages) || stages.length === 0) {
+      return res.status(400).json({ error: 'Item type, name and stages required' });
+    }
+
+    // Tạo product mới tự động với tên là item_name
+    const productCode = `CUSTOM-${Date.now()}`;
+    const productResult = await dbRun(
+      `INSERT INTO products (product_code, product_name, current_stage_id, status)
+       VALUES (?, ?, 1, 'processing')`,
+      [productCode, item_name]
+    );
+
+    const productId = productResult.lastID;
+
+    // Tạo inbound record
+    const inboundRecord = await InboundRecord.create({
+      product_id: productId,
+      description: item_description || `Custom inbound: ${item_name} (${item_type})`,
+      created_by: req.user.id,
+      stages: stages.map(stage => ({
+        stage_id: stage.stage_id,
+        norm_hours: Number(stage.norm_hours)
+      }))
+    });
+
+    // Kích hoạt các stages
+    for (const stage of stages) {
+      await ProductActiveStage.activateStage(productId, stage.stage_id, {
+        norm_hours: Number(stage.norm_hours),
+        allowRework: true
+      });
+    }
+
+    await ActivityLog.log(req.user.id, 'CREATE_CUSTOM_INBOUND_RECORD', {
+      item_type,
+      item_name,
+      product_id: productId,
+      stage_count: stages.length
+    });
+
+    res.json({ success: true, data: { ...inboundRecord, product_id: productId } });
+  } catch (error) {
+    console.error('Error creating custom inbound record:', error);
     res.status(500).json({ error: error.message });
   }
 };

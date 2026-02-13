@@ -73,8 +73,26 @@
       </div>
     </div>
 
+    <!-- Tabs -->
+    <div class="flex space-x-4 mb-6 border-b border-gray-200">
+      <button onclick="showMainTab('active')" id="activeProductsTab" class="py-3 px-5 font-semibold text-indigo-600 border-b-2 border-indigo-600">
+        <i class="fas fa-stream mr-2"></i>Đang xử lý
+        <span id="activeProductsCount" class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">0</span>
+      </button>
+      <button onclick="showMainTab('completed')" id="completedProductsTab" class="py-3 px-5 font-semibold text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
+        <i class="fas fa-warehouse mr-2"></i>Kho hàng
+        <span id="warehouseCount" class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">0</span>
+      </button>
+      <button onclick="showMainTab('export')" id="exportManagementTab" class="py-3 px-5 font-semibold text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
+        <i class="fas fa-file-signature mr-2"></i>Quản lý xuất hàng
+      </button>
+      <button onclick="showMainTab('inbound')" id="inboundTab" class="py-3 px-5 font-semibold text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
+        <i class="fas fa-clipboard-check mr-2"></i>Nhập hàng
+      </button>
+    </div>
+
     <!-- Products List -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div id="activeTab-content" class="bg-white shadow rounded-lg overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-xl font-semibold text-gray-900">Products in Multi-Stage Workflow</h2>
       </div>
@@ -95,6 +113,164 @@
             <!-- Data will be loaded via JavaScript -->
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <div id="completedProductsTab-content" class="bg-white shadow rounded-lg overflow-hidden hidden">
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-gray-900">Kho hàng (chuẩn bị xuất hàng)</h2>
+        <div class="flex gap-2">
+          <button onclick="openAddCustomItemModal()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+            <i class="fas fa-plus mr-2"></i>Thêm mục tự do
+          </button>
+          <button onclick="openExportRecordModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+            <i class="fas fa-file-signature mr-2"></i>Tạo biên bản xuất xưởng
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chọn</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian nhập kho</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="completedProductsTableBody" class="bg-white divide-y divide-gray-200">
+            <!-- Data will be loaded via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="exportManagementTab-content" class="bg-white shadow rounded-lg overflow-hidden hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900">Quản lý xuất hàng</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Biên bản</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Địa chỉ gửi</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số sản phẩm</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người tạo</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="exportRecordsTableBody" class="bg-white divide-y divide-gray-200">
+            <!-- Data will be loaded via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="inboundTab-content" class="bg-white shadow rounded-lg overflow-hidden hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900">Nhập hàng (sửa chữa / tự do)</h2>
+      </div>
+      <div class="p-6 space-y-6">
+        <form id="inboundForm" class="space-y-4">
+          <div class="border-b pb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Loại nhập hàng</label>
+            <div class="flex gap-4">
+              <label class="flex items-center">
+                <input type="radio" name="inboundType" value="product" class="mr-2" checked onchange="toggleInboundType()">
+                <span>Sản phẩm có sẵn (sửa chữa)</span>
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="inboundType" value="custom" class="mr-2" onchange="toggleInboundType()">
+                <span>Hàng tự do (không có trong products)</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="productInboundFields">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Chọn sản phẩm</label>
+                <select id="inboundProductSelect" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                  <option value="">-- Chọn sản phẩm --</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Ghi chú nhập hàng</label>
+                <input type="text" id="inboundDescription" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Mô tả ngắn">
+              </div>
+            </div>
+          </div>
+
+          <div id="customInboundFields" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Loại hàng</label>
+                <select id="customInboundItemType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                  <option value="document">Hồ sơ / Giấy tờ</option>
+                  <option value="personal">Đồ dùng cá nhân</option>
+                  <option value="misc">Khác</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Tên hàng</label>
+                <input type="text" id="customInboundItemName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Tên hàng nhập">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700">Mô tả</label>
+                <textarea id="customInboundItemDescription" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" rows="2" placeholder="Mô tả chi tiết"></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Số lượng</label>
+                <input type="number" id="customInboundQuantity" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" value="1" min="1">
+              </div>
+            </div>
+            
+            <div class="mt-4 border-t pt-4">
+              <label class="flex items-center">
+                <input type="checkbox" id="skipStaging" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" onchange="toggleStagingSection()">
+                <span class="ml-2 text-sm font-medium text-gray-700">Nhập trực tiếp vào kho (bỏ qua staging/sản xuất)</span>
+              </label>
+              <p class="ml-6 mt-1 text-xs text-gray-500">Sử dụng khi hàng đã hoàn thiện, không cần qua công đoạn sản xuất</p>
+            </div>
+          </div>
+
+          <div id="stagingSection" class="border-t pt-4">
+            <label class="block text-sm font-medium text-gray-700 mb-3">Chọn staging và định mức</label>
+            <div id="inboundStagesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Stages will be populated by JavaScript -->
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+              <i class="fas fa-clipboard-check mr-2"></i>Tạo phiếu nhập & kích hoạt stage
+            </button>
+          </div>
+        </form>
+
+        <div class="border-t pt-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Lịch sử nhập hàng</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sản phẩm</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số stage</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người tạo</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                </tr>
+              </thead>
+              <tbody id="inboundRecordsTableBody" class="bg-white divide-y divide-gray-200">
+                <!-- Data will be loaded via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -285,6 +461,9 @@ async function loadOverview() {
     const tbody = document.getElementById('productsTableBody');
     tbody.innerHTML = '';
     
+    // Update badge count
+    document.getElementById('activeProductsCount').textContent = data.length;
+    
     if (data.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No active products in multi-stage workflow</td></tr>';
       return;
@@ -293,6 +472,19 @@ async function loadOverview() {
     data.forEach(product => {
       const row = document.createElement('tr');
       row.className = 'hover:bg-gray-50';
+      
+      // Parse stage details: stage_name||stage_id||worker_count
+      const stageDetailsArray = (product.stage_details || '').split('##').filter(s => s.trim());
+      const stagesHTML = stageDetailsArray.map(stageDetail => {
+        const [stageName, stageId, workerCount] = stageDetail.split('||');
+        const count = parseInt(workerCount) || 0;
+        const bgColor = count > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600';
+        return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor}">
+                  ${stageName}
+                  <span class="ml-1 inline-flex items-center justify-center w-4 h-4 text-xs font-bold rounded-full ${count > 0 ? 'bg-green-200' : 'bg-gray-200'}">${count}</span>
+                </span>`;
+      }).join('');
+      
       row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap">
           <div class="text-sm font-medium text-gray-900">${product.product_code}</div>
@@ -302,9 +494,7 @@ async function loadOverview() {
         </td>
         <td class="px-6 py-4">
           <div class="flex flex-wrap gap-1">
-            ${(product.active_stages || '').split(',').map(stage => 
-              `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${stage}</span>`
-            ).join('')}
+            ${stagesHTML}
           </div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap">
@@ -438,6 +628,604 @@ function closeAssignWorkersModal() {
   document.getElementById('assignWorkersForm').reset();
 }
 
+function showMainTab(tabName) {
+  const tabs = ['active', 'completed', 'export', 'inbound'];
+  tabs.forEach(tab => {
+    const contentId = tab === 'active'
+      ? 'activeTab-content'
+      : (tab === 'completed'
+        ? 'completedProductsTab-content'
+        : (tab === 'export' ? 'exportManagementTab-content' : 'inboundTab-content'));
+
+    const buttonId = tab === 'active'
+      ? 'activeProductsTab'
+      : (tab === 'completed'
+        ? 'completedProductsTab'
+        : (tab === 'export' ? 'exportManagementTab' : 'inboundTab'));
+
+    const isCurrent = tab === tabName;
+    document.getElementById(contentId).classList.toggle('hidden', !isCurrent);
+    document.getElementById(buttonId).classList.toggle('border-indigo-600', isCurrent);
+    document.getElementById(buttonId).classList.toggle('text-indigo-600', isCurrent);
+    document.getElementById(buttonId).classList.toggle('border-transparent', !isCurrent);
+    document.getElementById(buttonId).classList.toggle('text-gray-600', !isCurrent);
+  });
+}
+
+function renderStageDetails(stageDetailsRaw) {
+  if (!stageDetailsRaw) return '';
+  const items = stageDetailsRaw.split('##').filter(Boolean);
+  return items.map(item => {
+    const [name, description, hours] = item.split('||');
+    const desc = description ? `<span class="text-xs text-gray-500">${description}</span>` : '';
+    return `
+      <div class="flex flex-col">
+        <span class="text-sm font-medium text-gray-900">${name} <span class="text-xs text-gray-500">(${hours}h)</span></span>
+        ${desc}
+      </div>
+    `;
+  }).join('');
+}
+
+let selectedWarehouseItems = [];
+let warehouseItemsMap = {};
+
+function toggleWarehouseItemSelection(itemId) {
+  const index = selectedWarehouseItems.indexOf(itemId);
+  if (index > -1) {
+    selectedWarehouseItems.splice(index, 1);
+  } else {
+    selectedWarehouseItems.push(itemId);
+  }
+}
+
+function renderSelectedWarehouseItemsForExport() {
+  const container = document.getElementById('exportSelectedProducts');
+  if (!container) return;
+
+  if (selectedWarehouseItems.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-500">Chưa chọn sản phẩm nào.</p>';
+    return;
+  }
+
+  container.innerHTML = selectedWarehouseItems.map(itemId => {
+    const item = warehouseItemsMap[itemId];
+    if (!item) return '';
+    
+    const displayName = item.item_type === 'product' 
+      ? `${item.product_code} - ${item.product_name}`
+      : `${item.item_name} (${item.item_type})`;
+
+    return `
+      <div class="border rounded-md p-3">
+        <div class="font-semibold text-gray-900">${displayName}</div>
+        <div class="text-xs text-gray-500">${item.item_description || ''}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadCompletedProducts() {
+  try {
+    const response = await fetch('/workflow/completed-products', {
+      headers: {
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load warehouse inventory');
+
+    const result = await response.json();
+    const data = result.data || [];
+    const tbody = document.getElementById('completedProductsTableBody');
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Kho hàng trống</td></tr>';
+      return;
+    }
+
+    // Update badge count
+    document.getElementById('warehouseCount').textContent = data.length;
+    
+    warehouseItemsMap = {};
+    data.forEach(item => {
+      warehouseItemsMap[item.id] = item;
+      const row = document.createElement('tr');
+      row.className = 'hover:bg-gray-50';
+      
+      const displayName = item.item_type === 'product'
+        ? `<div class="text-sm font-semibold text-gray-900">${item.product_code}</div>
+           <div class="text-xs text-gray-500">${item.product_name || item.item_name}</div>`
+        : `<div class="text-sm font-semibold text-gray-900">${item.item_name}</div>
+           <div class="text-xs text-gray-500">${item.item_type}</div>`;
+
+      const stageInfo = item.item_type === 'product' 
+        ? '<span class="text-xs text-gray-500">Sản phẩm hoàn thành</span>'
+        : '<span class="text-xs text-gray-500">-</span>';
+
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap">
+          <input type="checkbox" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" 
+                 onchange="toggleWarehouseItemSelection(${item.id})" 
+                 ${selectedWarehouseItems.includes(item.id) ? 'checked' : ''}>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          ${displayName}
+        </td>
+        <td class="px-6 py-4">
+          ${stageInfo}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${item.quantity || 1}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-600">${item.added_at ? new Date(item.added_at).toLocaleString('vi-VN') : '-'}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+          ${item.product_id ? `<button onclick="openCompletedProductDetail(${item.product_id})" class="text-indigo-600 hover:text-indigo-900">Xem chi tiết</button>` : '-'}
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error loading warehouse inventory:', error);
+    alert('Failed to load warehouse inventory');
+  }
+}
+
+function openExportRecordModal() {
+  if (selectedWarehouseItems.length === 0) {
+    alert('Vui lòng chọn ít nhất 1 mục từ kho để tạo biên bản');
+    return;
+  }
+  renderSelectedWarehouseItemsForExport();
+  document.getElementById('exportRecordModal').classList.remove('hidden');
+}
+
+function closeExportRecordModal() {
+  document.getElementById('exportRecordModal').classList.add('hidden');
+}
+
+async function submitExportRecord(event) {
+  event.preventDefault();
+
+  const title = document.getElementById('exportTitle').value.trim();
+  const description = document.getElementById('exportDescription').value.trim();
+  const shippingAddress = document.getElementById('exportShippingAddress').value.trim();
+  const approvedBy = document.getElementById('exportApprovedBy').value.trim();
+
+  if (!title || !shippingAddress) {
+    alert('Vui lòng nhập tiêu đề và địa chỉ gửi hàng');
+    return;
+  }
+
+  if (selectedWarehouseItems.length === 0) {
+    alert('Vui lòng chọn ít nhất 1 mục từ kho');
+    return;
+  }
+
+  try {
+    const response = await fetch('/workflow/export-records', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify({
+        title,
+        description,
+        shipping_address: shippingAddress,
+        approved_by: approvedBy,
+        warehouseItemIds: selectedWarehouseItems,
+        customItems: [] // TODO: add custom items from form
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to create export record');
+
+    alert('Đã tạo biên bản xuất xưởng');
+    closeExportRecordModal();
+    selectedWarehouseItems = [];
+    loadExportRecords();
+    loadCompletedProducts(); // Refresh warehouse inventory
+    loadCompletedProducts();
+  } catch (error) {
+    console.error('Error creating export record:', error);
+    alert('Lỗi: ' + error.message);
+  }
+}
+
+function openAddCustomItemModal() {
+  document.getElementById('customItemModal').classList.remove('hidden');
+}
+
+function closeCustomItemModal() {
+  document.getElementById('customItemModal').classList.add('hidden');
+  document.getElementById('customItemForm').reset();
+}
+
+async function submitCustomItem(event) {
+  event.preventDefault();
+
+  const itemType = document.getElementById('customItemType').value;
+  const itemName = document.getElementById('customItemName').value.trim();
+  const itemDescription = document.getElementById('customItemDescription').value.trim();
+  const quantity = parseInt(document.getElementById('customItemQuantity').value);
+
+  if (!itemType || !itemName) {
+    alert('Vui lòng nhập đầy đủ thông tin');
+    return;
+  }
+
+  try {
+    const response = await fetch('/workflow/warehouse/add-custom-item', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify({
+        item_type: itemType,
+        item_name: itemName,
+        item_description: itemDescription,
+        quantity
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to add custom item');
+
+    alert('Đã thêm mục vào kho');
+    closeCustomItemModal();
+    loadCompletedProducts(); // Refresh warehouse inventory
+  } catch (error) {
+    console.error('Error adding custom item:', error);
+    alert('Lỗi: ' + error.message);
+  }
+}
+
+async function loadExportRecords() {
+  try {
+    const response = await fetch('/workflow/export-records', {
+      headers: {
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load export records');
+
+    const result = await response.json();
+    const data = result.data || [];
+    const tbody = document.getElementById('exportRecordsTableBody');
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Chưa có biên bản xuất hàng</td></tr>';
+      return;
+    }
+
+    data.forEach(record => {
+      const row = document.createElement('tr');
+      row.className = 'hover:bg-gray-50';
+      row.innerHTML = `
+        <td class="px-6 py-4">
+          <div class="text-sm font-semibold text-gray-900">${record.title}</div>
+          <div class="text-xs text-gray-500">#${record.id}</div>
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-700">${record.shipping_address}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">${record.total_items || 0}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">${record.created_by_name || '-'}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${record.created_at ? new Date(record.created_at).toLocaleString('vi-VN') : '-'}</td>
+        <td class="px-6 py-4 text-sm font-medium">
+          <a href="/workflow/export-records/${record.id}/print" target="_blank" class="text-indigo-600 hover:text-indigo-900">In A5</a>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error loading export records:', error);
+    alert('Failed to load export records');
+  }
+}
+
+async function loadInboundFormData() {
+  try {
+    const [productsResponse, stagesResponse] = await Promise.all([
+      fetch('/workflow/products/list', {
+        headers: { 'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}` }
+      }),
+      fetch('/workflow/stages/list', {
+        headers: { 'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}` }
+      })
+    ]);
+
+    if (!productsResponse.ok || !stagesResponse.ok) throw new Error('Failed to load inbound data');
+
+    const productsData = await productsResponse.json();
+    const stagesData = await stagesResponse.json();
+
+    const productSelect = document.getElementById('inboundProductSelect');
+    productSelect.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
+    (productsData.data || []).forEach(product => {
+      const option = document.createElement('option');
+      option.value = product.id;
+      option.textContent = `${product.product_code} - ${product.product_name}`;
+      productSelect.appendChild(option);
+    });
+
+    const stagesContainer = document.getElementById('inboundStagesContainer');
+    stagesContainer.innerHTML = '';
+    (stagesData.data || []).forEach(stage => {
+      const item = document.createElement('label');
+      item.className = 'flex items-center gap-3 border rounded-md p-3 bg-gray-50';
+      item.innerHTML = `
+        <input type="checkbox" data-stage-id="${stage.id}" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+        <span class="flex-1 text-sm font-medium text-gray-900">${stage.stage_name}</span>
+        <input type="number" min="1" data-stage-hours="${stage.id}" class="w-24 rounded border-gray-300" value="${stage.norm_hours}">
+      `;
+      stagesContainer.appendChild(item);
+    });
+  } catch (error) {
+    console.error('Error loading inbound form data:', error);
+    alert('Failed to load inbound data');
+  }
+}
+
+async function loadInboundRecords() {
+  try {
+    const response = await fetch('/workflow/inbound-records', {
+      headers: {
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load inbound records');
+
+    const result = await response.json();
+    const data = result.data || [];
+    const tbody = document.getElementById('inboundRecordsTableBody');
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Chưa có nhập hàng</td></tr>';
+      return;
+    }
+
+    data.forEach(record => {
+      const row = document.createElement('tr');
+      row.className = 'hover:bg-gray-50';
+      row.innerHTML = `
+        <td class="px-6 py-4">
+          <div class="text-sm font-semibold text-gray-900">${record.product_code}</div>
+          <div class="text-xs text-gray-500">${record.product_name}</div>
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-700">${record.stage_count || 0}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">${record.created_by_name || '-'}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${record.created_at ? new Date(record.created_at).toLocaleString('vi-VN') : '-'}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error loading inbound records:', error);
+    alert('Failed to load inbound records');
+  }
+}
+
+function toggleInboundType() {
+  const inboundType = document.querySelector('input[name="inboundType"]:checked').value;
+  const productFields = document.getElementById('productInboundFields');
+  const customFields = document.getElementById('customInboundFields');
+  const stagingSection = document.getElementById('stagingSection');
+
+  if (inboundType === 'product') {
+    productFields.classList.remove('hidden');
+    customFields.classList.add('hidden');
+    stagingSection.classList.remove('hidden');
+    document.getElementById('inboundProductSelect').required = true;
+    document.getElementById('customInboundItemName').required = false;
+  } else {
+    productFields.classList.add('hidden');
+    customFields.classList.remove('hidden');
+    document.getElementById('inboundProductSelect').required = false;
+    document.getElementById('customInboundItemName').required = true;
+    // Check skipStaging state
+    toggleStagingSection();
+  }
+}
+
+function toggleStagingSection() {
+  const skipStaging = document.getElementById('skipStaging')?.checked || false;
+  const stagingSection = document.getElementById('stagingSection');
+  
+  if (skipStaging) {
+    stagingSection.classList.add('hidden');
+  } else {
+    stagingSection.classList.remove('hidden');
+  }
+}
+
+async function handleInboundSubmit(event) {
+  event.preventDefault();
+
+  const inboundType = document.querySelector('input[name="inboundType"]:checked').value;
+  const skipStaging = document.getElementById('skipStaging')?.checked || false;
+
+  try {
+    let endpoint, body;
+
+    if (inboundType === 'product') {
+      const productId = document.getElementById('inboundProductSelect').value;
+      const description = document.getElementById('inboundDescription').value.trim();
+      
+      if (!productId) {
+        alert('Vui lòng chọn sản phẩm');
+        return;
+      }
+
+      const stages = Array.from(document.querySelectorAll('[data-stage-id]'))
+        .filter(input => input.checked)
+        .map(input => {
+          const stageId = Number(input.getAttribute('data-stage-id'));
+          const hoursInput = document.querySelector(`[data-stage-hours="${stageId}"]`);
+          return {
+            stage_id: stageId,
+            norm_hours: Number(hoursInput?.value || 0)
+          };
+        })
+        .filter(item => item.norm_hours > 0);
+
+      if (stages.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 stage với định mức hợp lệ');
+        return;
+      }
+
+      endpoint = '/workflow/inbound/create';
+      body = { productId, description, stages };
+    } else {
+      // Custom item inbound
+      const itemType = document.getElementById('customInboundItemType').value;
+      const itemName = document.getElementById('customInboundItemName').value.trim();
+      const itemDescription = document.getElementById('customInboundItemDescription').value.trim();
+      const quantity = Number(document.getElementById('customInboundQuantity').value);
+
+      if (!itemName) {
+        alert('Vui lòng nhập tên hàng');
+        return;
+      }
+
+      if (skipStaging) {
+        // Nhập trực tiếp vào kho
+        endpoint = '/workflow/warehouse/add-custom-item';
+        body = { 
+          item_type: itemType, 
+          item_name: itemName, 
+          item_description: itemDescription,
+          quantity
+        };
+      } else {
+        // Nhập với staging
+        const stages = Array.from(document.querySelectorAll('[data-stage-id]'))
+          .filter(input => input.checked)
+          .map(input => {
+            const stageId = Number(input.getAttribute('data-stage-id'));
+            const hoursInput = document.querySelector(`[data-stage-hours="${stageId}"]`);
+            return {
+              stage_id: stageId,
+              norm_hours: Number(hoursInput?.value || 0)
+            };
+          })
+          .filter(item => item.norm_hours > 0);
+
+        if (stages.length === 0) {
+          alert('Vui lòng chọn ít nhất 1 stage với định mức hợp lệ');
+          return;
+        }
+
+        endpoint = '/workflow/inbound/create-custom';
+        body = { 
+          item_type: itemType, 
+          item_name: itemName, 
+          item_description: itemDescription,
+          quantity,
+          stages 
+        };
+      }
+    }
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to create inbound record');
+
+    if (skipStaging) {
+      alert('Đã thêm hàng trực tiếp vào kho');
+      loadCompletedProducts(); // Refresh warehouse
+    } else {
+      alert('Đã tạo phiếu nhập hàng');
+      loadInboundRecords();
+    }
+    
+    document.getElementById('inboundForm').reset();
+    toggleInboundType(); // Reset UI
+    loadInboundRecords();
+  } catch (error) {
+    console.error('Error creating inbound record:', error);
+    alert('Lỗi: ' + error.message);
+  }
+}
+
+async function openCompletedProductDetail(productId) {
+  try {
+    const response = await fetch(`/workflow/completed-products/${productId}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load product details');
+
+    const result = await response.json();
+    const data = result.data;
+    const detailContainer = document.getElementById('completedProductDetailBody');
+    const titleEl = document.getElementById('completedProductDetailTitle');
+    const totalEl = document.getElementById('completedProductTotalHours');
+
+    titleEl.textContent = `${data.product.product_code} - ${data.product.product_name}`;
+    totalEl.textContent = `${data.total_norm_hours || 0}h`;
+
+    detailContainer.innerHTML = data.stages.map(stage => {
+      const workersHtml = (stage.workers || []).map(worker => {
+        const start = worker.start_time ? new Date(worker.start_time).toLocaleString('vi-VN') : '-';
+        const end = worker.end_time ? new Date(worker.end_time).toLocaleString('vi-VN') : '-';
+        return `
+          <div class="border rounded-md p-2 text-sm">
+            <div class="font-medium text-gray-800">${worker.full_name} <span class="text-xs text-gray-500">(${worker.username})</span></div>
+            <div class="text-xs text-gray-600">Vai trò: ${worker.role}</div>
+            <div class="text-xs text-gray-600">Bắt đầu: ${start}</div>
+            <div class="text-xs text-gray-600">Kết thúc: ${end}</div>
+            <div class="text-xs text-gray-600">Giờ làm: ${worker.hours_worked || 0}h</div>
+            <div class="text-xs text-gray-600">Trạng thái: ${worker.status}</div>
+          </div>
+        `;
+      }).join('') || '<p class="text-xs text-gray-500">Chưa có workers</p>';
+
+      return `
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-sm font-semibold text-gray-900">${stage.stage_name}</p>
+              <p class="text-xs text-gray-500">${stage.description || ''}</p>
+            </div>
+            <div class="text-sm font-medium text-gray-900">${stage.norm_hours}h</div>
+          </div>
+          <div class="mt-2 text-xs text-gray-600">Hoàn thành: ${stage.completed_at ? new Date(stage.completed_at).toLocaleString('vi-VN') : '-'}</div>
+          <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+            ${workersHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('completedProductDetailModal').classList.remove('hidden');
+  } catch (error) {
+    console.error('Error loading completed product details:', error);
+    alert('Failed to load product details');
+  }
+}
+
+function closeCompletedProductDetailModal() {
+  document.getElementById('completedProductDetailModal').classList.add('hidden');
+}
+
 async function submitAssignWorkers(event) {
   event.preventDefault();
   
@@ -482,7 +1270,15 @@ async function submitAssignWorkers(event) {
 }
 
 // Load data on page load
-document.addEventListener('DOMContentLoaded', loadOverview);
+document.addEventListener('DOMContentLoaded', () => {
+  showMainTab('active');
+  loadOverview();
+  loadCompletedProducts();
+  loadExportRecords();
+  loadInboundRecords();
+  loadInboundFormData();
+  document.getElementById('inboundForm')?.addEventListener('submit', handleInboundSubmit);
+});
 
 // Auto-refresh every 30 seconds
 setInterval(loadOverview, 30000);
@@ -527,6 +1323,124 @@ setInterval(loadOverview, 30000);
         </button>
         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
           <i class="fas fa-user-plus mr-2"></i>Gán Workers
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Completed Product Detail Modal -->
+<div id="completedProductDetailModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <h3 class="text-xl font-bold text-gray-900" id="completedProductDetailTitle"></h3>
+        <p class="text-sm text-gray-600">Định mức tổng: <span id="completedProductTotalHours" class="font-semibold"></span></p>
+      </div>
+      <button onclick="closeCompletedProductDetailModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+    </div>
+
+    <div id="completedProductDetailBody" class="space-y-4">
+      <!-- Stage details will be populated by JavaScript -->
+    </div>
+  </div>
+</div>
+
+<!-- Export Record Modal -->
+<div id="exportRecordModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-10 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold text-gray-900">Biên bản xuất xưởng</h3>
+      <button onclick="closeExportRecordModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+    </div>
+
+    <form id="exportRecordForm" class="space-y-4" onsubmit="submitExportRecord(event)">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Tiêu đề biên bản</label>
+          <input type="text" id="exportTitle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" value="BIÊN BẢN XUẤT XƯỞNG" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Ký duyệt</label>
+          <input type="text" id="exportApprovedBy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Người ký duyệt">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Địa chỉ gửi hàng</label>
+        <input type="text" id="exportShippingAddress" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Địa chỉ giao hàng" required>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Mô tả</label>
+        <textarea id="exportDescription" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" rows="2" placeholder="Ghi chú chung"></textarea>
+      </div>
+
+      <div class="border-t pt-4">
+        <h4 class="text-sm font-semibold text-gray-900 mb-2">Sản phẩm trong biên bản</h4>
+        <div id="exportSelectedProducts" class="space-y-3">
+          <!-- Selected products will be populated by JavaScript -->
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-3 pt-2">
+        <button type="button" onclick="closeExportRecordModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+          <i class="fas fa-check mr-2"></i>Tạo biên bản
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Custom Item Modal -->
+<div id="customItemModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold text-gray-900">Thêm mục tự do vào kho</h3>
+      <button onclick="closeCustomItemModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+    </div>
+
+    <form id="customItemForm" class="space-y-4" onsubmit="submitCustomItem(event)">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Loại mục</label>
+        <select id="customItemType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+          <option value="">-- Chọn loại --</option>
+          <option value="document">Hồ sơ / Giấy tờ</option>
+          <option value="personal">Đồ dùng cá nhân</option>
+          <option value="misc">Khác</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Tên mục</label>
+        <input type="text" id="customItemName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Ví dụ: Hồ sơ thiết kế, Bảo hành, v.v." required>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Mô tả chi tiết</label>
+        <textarea id="customItemDescription" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" rows="3" placeholder="Mô tả chi tiết về mục này"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Số lượng</label>
+        <input type="number" id="customItemQuantity" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" value="1" min="1" required>
+      </div>
+
+      <div class="flex justify-end space-x-3 pt-2">
+        <button type="button" onclick="closeCustomItemModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+          <i class="fas fa-plus mr-2"></i>Thêm vào kho
         </button>
       </div>
     </form>

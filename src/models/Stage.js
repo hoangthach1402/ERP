@@ -26,6 +26,86 @@ export class Stage {
       [currentStage.sequence_order + 1]
     );
   }
+
+  static async getMaxSequenceOrder() {
+    const row = await dbGet('SELECT MAX(sequence_order) as maxOrder FROM stages');
+    return row?.maxOrder || 0;
+  }
+
+  static async create({ stage_name, norm_hours, description }) {
+    const maxOrder = await this.getMaxSequenceOrder();
+    const result = await dbRun(
+      'INSERT INTO stages (stage_name, norm_hours, sequence_order, description) VALUES (?, ?, ?, ?)',
+      [stage_name, norm_hours, maxOrder + 1, description || null]
+    );
+
+    return this.findById(result.lastID);
+  }
+
+  static async updateStage(id, { stage_name, norm_hours, description }) {
+    await dbRun(
+      'UPDATE stages SET stage_name = ?, norm_hours = ?, description = ? WHERE id = ?',
+      [stage_name, norm_hours, description || null, id]
+    );
+
+    return this.findById(id);
+  }
+
+  static async reorder(stageIds) {
+    await dbRun('BEGIN TRANSACTION');
+    try {
+      for (let i = 0; i < stageIds.length; i++) {
+        await dbRun(
+          'UPDATE stages SET sequence_order = ? WHERE id = ?',
+          [i + 1, stageIds[i]]
+        );
+      }
+      await dbRun('COMMIT');
+    } catch (error) {
+      await dbRun('ROLLBACK');
+      throw error;
+    }
+  }
+
+  static async deleteWithCascade(id) {
+    await dbRun('BEGIN TRANSACTION');
+    try {
+      const fallback = await dbGet(
+        'SELECT id FROM stages WHERE id != ? ORDER BY sequence_order ASC LIMIT 1',
+        [id]
+      );
+
+      if (!fallback) {
+        throw new Error('At least one stage must remain');
+      }
+
+      await dbRun(
+        'UPDATE products SET current_stage_id = ? WHERE current_stage_id = ?',
+        [fallback.id, id]
+      );
+
+      await dbRun(
+        'DELETE FROM material_request_messages WHERE request_id IN (SELECT id FROM material_requests WHERE stage_id = ?)',
+        [id]
+      );
+      await dbRun('DELETE FROM material_requests WHERE stage_id = ?', [id]);
+      await dbRun('DELETE FROM product_stage_workers WHERE stage_id = ?', [id]);
+      await dbRun('DELETE FROM product_active_stages WHERE stage_id = ?', [id]);
+      await dbRun('DELETE FROM product_stage_tasks WHERE stage_id = ?', [id]);
+      await dbRun('DELETE FROM activity_logs WHERE stage_id = ?', [id]);
+      await dbRun('DELETE FROM stages WHERE id = ?', [id]);
+
+      const remaining = await dbAll('SELECT id FROM stages ORDER BY sequence_order ASC');
+      for (let i = 0; i < remaining.length; i++) {
+        await dbRun('UPDATE stages SET sequence_order = ? WHERE id = ?', [i + 1, remaining[i].id]);
+      }
+
+      await dbRun('COMMIT');
+    } catch (error) {
+      await dbRun('ROLLBACK');
+      throw error;
+    }
+  }
 }
 
 export class ProductStageTask {
