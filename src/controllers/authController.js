@@ -36,8 +36,16 @@ export const login = async (req, res) => {
       role: user.role
     };
 
-    console.log(`✓ User ${username} logged in`);
-    res.redirect('/product/dashboard');
+    console.log(`✓ User ${username} logged in with role: ${user.role}`);
+    
+    // Save session before redirect
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).render('login', { error: 'Session error' });
+      }
+      res.redirect('/');
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).render('login', { error: 'Server error' });
@@ -45,19 +53,35 @@ export const login = async (req, res) => {
 };
 
 export const logout = (req, res) => {
+  const user = req.session?.user?.username || 'Unknown';
+  console.log(`User ${user} logged out`);
+  
   req.session.destroy((err) => {
     if (err) {
       console.error('Logout error:', err);
       return res.status(500).json({ error: 'Logout failed' });
     }
+    // Redirect to root which will show login page
     res.redirect('/');
   });
 };
 
 export const loginPage = (req, res) => {
-  if (req.session?.token) {
-    return res.redirect('/product/dashboard');
+  // If user is already logged in, redirect to appropriate dashboard
+  if (req.session?.token && req.session?.user) {
+    const role = req.session.user.role?.toUpperCase();
+    console.log(`LoginPage: Already logged in as ${req.session.user.username} (${role}), redirecting to dashboard`);
+    
+    if (role === 'ADMIN') {
+      return res.redirect('/workflow/multi-stage-dashboard');
+    } else if (role === 'THU_MUA') {
+      return res.redirect('/purchasing/dashboard');
+    } else {
+      return res.redirect('/workflow/worker-dashboard');
+    }
   }
+  
+  // Not logged in, show login page
   res.render('login', { error: null });
 };
 

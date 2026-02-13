@@ -134,14 +134,6 @@ app.use('/admin', adminRoutes);
 app.use('/purchasing', purchasingRoutes);
 app.use('/workflow', workflowRoutes);
 
-// Root redirect to login
-app.get('/', (req, res) => {
-  if (req.session?.token) {
-    return res.redirect('/product/dashboard');
-  }
-  res.redirect('/login');
-});
-
 // 404 handler
 app.use((req, res) => {
   res.status(404).render('error', { error: 'Page not found' });
