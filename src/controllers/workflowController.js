@@ -651,7 +651,8 @@ export const getProductStagesDetail = async (req, res) => {
     const stagesWithStats = await Promise.all(stages.map(async (stage) => {
       const workers = await ProductStageWorker.getWorkersByProductStage(productId, stage.stage_id);
       
-      const totalHours = workers.reduce((sum, w) => sum + (w.hours_worked || 0), 0);
+      // Calculate totalHours from hours_elapsed (real-time calculation like worker dashboard)
+      const totalHours = workers.reduce((sum, w) => sum + (w.hours_elapsed || 0), 0);
       const completed = workers.filter(w => w.status === 'completed').length;
       const working = workers.filter(w => w.status === 'working').length;
       const assigned = workers.filter(w => w.status === 'assigned').length;
