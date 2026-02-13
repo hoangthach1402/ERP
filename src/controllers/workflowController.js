@@ -493,11 +493,23 @@ export const getProductActiveStages = async (req, res) => {
   try {
     const { productId } = req.params;
 
+    // Get all available stages
+    const allStages = await Stage.getAll();
+    
+    // Get active stages for this product
     const activeStages = await ProductActiveStage.getActiveStagesByProduct(productId);
+    const activeStageIds = activeStages.map(s => s.stage_id);
+
+    // Combine: all stages + mark which ones are active
+    const stagesWithStatus = allStages.map(stage => ({
+      ...stage,
+      stage_id: stage.id,
+      status: activeStageIds.includes(stage.id) ? 'active' : 'inactive'
+    }));
 
     res.json({
       success: true,
-      data: activeStages
+      data: stagesWithStatus
     });
 
   } catch (error) {
