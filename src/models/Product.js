@@ -203,6 +203,41 @@ export class Product {
 
     return this.findById(productId);
   }
+
+  static async deleteWithCascade(productId) {
+    await dbRun('BEGIN TRANSACTION');
+    try {
+      await dbRun(
+        `DELETE FROM material_request_messages
+         WHERE request_id IN (SELECT id FROM material_requests WHERE product_id = ?)` ,
+        [productId]
+      );
+      await dbRun('DELETE FROM material_requests WHERE product_id = ?', [productId]);
+
+      await dbRun('DELETE FROM product_stage_workers WHERE product_id = ?', [productId]);
+      await dbRun('DELETE FROM product_active_stages WHERE product_id = ?', [productId]);
+      await dbRun('DELETE FROM product_stage_tasks WHERE product_id = ?', [productId]);
+      await dbRun('DELETE FROM activity_logs WHERE product_id = ?', [productId]);
+
+      await dbRun(
+        `DELETE FROM inbound_record_stages
+         WHERE record_id IN (SELECT id FROM inbound_records WHERE product_id = ?)` ,
+        [productId]
+      );
+      await dbRun('DELETE FROM inbound_records WHERE product_id = ?', [productId]);
+
+      await dbRun('DELETE FROM export_record_items WHERE product_id = ?', [productId]);
+      await dbRun('DELETE FROM warehouse_inventory WHERE product_id = ?', [productId]);
+
+      await dbRun('DELETE FROM products WHERE id = ?', [productId]);
+
+      await dbRun('COMMIT');
+      return { success: true };
+    } catch (error) {
+      await dbRun('ROLLBACK');
+      throw error;
+    }
+  }
 }
 
 export default Product;

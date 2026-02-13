@@ -60,6 +60,34 @@ export const createProduct = async (req, res) => {
   }
 };
 
+export const deleteProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    if (!productId) {
+      return res.status(400).json({ error: 'Product ID is required' });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    await Product.deleteWithCascade(productId);
+
+    await ActivityLog.log(req.user.id, 'DELETE_PRODUCT', {
+      product_id: productId,
+      product_code: product.product_code
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete product error:', error.message);
+    res.status(500).json({ error: 'Lỗi xóa sản phẩm. Vui lòng thử lại' });
+  }
+};
+
 export default {
-  createProduct
+  createProduct,
+  deleteProduct
 };
