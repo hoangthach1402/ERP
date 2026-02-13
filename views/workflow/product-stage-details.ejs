@@ -131,12 +131,17 @@
 
 <script>
 const authToken = '<%= typeof token !== "undefined" ? token : "" %>';
-const userRole = '<%= typeof user !== "undefined" && user.role ? user.role : "" %>';
+let userRole = '<%= typeof user !== "undefined" && user.role ? user.role : "" %>';
 const productId = new URLSearchParams(window.location.search).get('id') || '<%= typeof productId !== "undefined" ? productId : "" %>';
+
+// Normalize userRole to lowercase
+userRole = userRole.toLowerCase();
 
 let currentEditData = { productId: null, stageId: null };
 let allStagesData = [];
 let allDepartmentStats = [];
+
+console.log('Page loaded - UserRole:', userRole, 'Is Admin?', userRole === 'admin', 'ProductId:', productId);
 
 // Wait for Chart.js to load
 function waitForChartJs(timeout = 5000) {
@@ -267,6 +272,11 @@ function formatDepartmentName(role) {
 function renderStagesDetails() {
   const container = document.getElementById('stagesContainer');
   container.innerHTML = '';
+  
+  console.log('=== renderStagesDetails ===');
+  console.log('userRole:', userRole, 'type:', typeof userRole);
+  console.log('userRole === "admin":', userRole === 'admin');
+  console.log('allStagesData length:', allStagesData.length);
 
   (allStagesData || []).forEach(stage => {
     const percentage = stage?.stats?.progress || 0;
@@ -288,12 +298,18 @@ function renderStagesDetails() {
               Đã Làm: <strong>${stage.stats?.totalHours || 0}h</strong>
             </p>
           </div>
-          ${userRole === 'admin' ? `
-            <button onclick="openEditModal(${stage.stage_id}, '${stage.stage_name}', ${stage.norm_hours})" 
-              class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center text-sm">
-              <i class="fas fa-edit mr-2"></i>Chỉnh Sửa
-            </button>
-          ` : ''}
+          <div class="flex flex-col space-y-2">
+            ${userRole === 'admin' ? `
+              <button onclick="openEditModal(${stage.stage_id}, '${stage.stage_name}', ${stage.norm_hours})" 
+                class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center text-sm whitespace-nowrap">
+                <i class="fas fa-edit mr-2"></i>Cập Nhật Định Mức
+              </button>
+            ` : `
+              <button disabled class="px-3 py-2 bg-gray-300 text-gray-500 rounded-md text-sm whitespace-nowrap cursor-not-allowed" title="Chỉ admin có thể chỉnh sửa">
+                <i class="fas fa-edit mr-2"></i>Chỉnh Sửa (Admin)
+              </button>
+            `}
+          </div>
         </div>
 
         <!-- Progress Bar -->
@@ -502,10 +518,22 @@ function renderProgressChart(totalHours, stages) {
 
 // Edit norm hours modal
 function openEditModal(stageId, stageName, normHours) {
+  console.log('=== openEditModal called ===');
+  console.log('stageId:', stageId, 'stageName:', stageName, 'normHours:', normHours);
+  
   currentEditData = { productId: productId, stageId: stageId };
   document.getElementById('editStageName').value = stageName;
   document.getElementById('editNormHoursInput').value = normHours;
-  document.getElementById('editNormHoursModal').classList.remove('hidden');
+  
+  const modal = document.getElementById('editNormHoursModal');
+  console.log('modal element:', modal);
+  
+  if (modal) {
+    modal.classList.remove('hidden');
+    console.log('Modal opened successfully');
+  } else {
+    console.error('Modal element not found!');
+  }
 }
 
 function closeEditModal() {

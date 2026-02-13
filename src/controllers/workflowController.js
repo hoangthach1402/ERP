@@ -690,8 +690,8 @@ export const updateStageNormHours = async (req, res) => {
     const { productId, stageId } = req.params;
     const { norm_hours } = req.body;
 
-    // Only admin can update norm hours
-    if (req.user.role !== 'admin') {
+    // Only admin can update norm hours (case-insensitive)
+    if (!req.user || req.user.role.toUpperCase() !== 'ADMIN') {
       return res.status(403).json({ error: 'Only admin can update norm hours' });
     }
 
