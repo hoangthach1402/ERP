@@ -29,7 +29,9 @@ export class Product {
 
   static async findById(id) {
     return dbGet(`
-      SELECT p.id, p.product_code, p.product_name, p.status, p.current_stage_id, p.created_at, p.completed_at,
+      SELECT p.id, p.product_code, p.product_name, p.status, p.current_stage_id,
+             p.kcs_form, p.kcs_dinh, p.kcs_form_at, p.kcs_dinh_at,
+             p.created_at, p.completed_at,
              s.stage_name, s.norm_hours
       FROM products p
       LEFT JOIN stages s ON p.current_stage_id = s.id
@@ -39,7 +41,9 @@ export class Product {
 
   static async findByCode(code) {
     return dbGet(`
-      SELECT p.id, p.product_code, p.product_name, p.status, p.current_stage_id, p.created_at, p.completed_at,
+      SELECT p.id, p.product_code, p.product_name, p.status, p.current_stage_id,
+             p.kcs_form, p.kcs_dinh, p.kcs_form_at, p.kcs_dinh_at,
+             p.created_at, p.completed_at,
              s.stage_name, s.norm_hours
       FROM products p
       LEFT JOIN stages s ON p.current_stage_id = s.id
@@ -49,7 +53,8 @@ export class Product {
 
   static async getAll(filters = {}) {
     let query = `
-      SELECT p.id, p.product_code, p.product_name, p.status, p.current_stage_id,
+        SELECT p.id, p.product_code, p.product_name, p.status, p.current_stage_id,
+          p.kcs_form, p.kcs_dinh, p.kcs_form_at, p.kcs_dinh_at,
              s.stage_name, s.norm_hours,
              pst.start_time, pst.end_time, pst.is_delayed,
              u.full_name as assigned_user,
@@ -78,7 +83,8 @@ export class Product {
 
   static async getProductsByStage(stageId) {
     return dbAll(`
-      SELECT p.id, p.product_code, p.product_name, p.status, p.current_stage_id,
+        SELECT p.id, p.product_code, p.product_name, p.status, p.current_stage_id,
+          p.kcs_form, p.kcs_dinh, p.kcs_form_at, p.kcs_dinh_at,
              s.stage_name, s.norm_hours,
              pst.id as task_id, pst.status as task_status, pst.start_time, pst.end_time, pst.is_delayed,
              u.full_name as assigned_user,
@@ -132,7 +138,8 @@ export class Product {
 
   static async getProductsWithDetails() {
     return dbAll(`
-      SELECT p.id, p.product_code, p.product_name, p.status,
+        SELECT p.id, p.product_code, p.product_name, p.status,
+          p.kcs_form, p.kcs_dinh, p.kcs_form_at, p.kcs_dinh_at,
              s.stage_name, s.norm_hours,
              pst.start_time, pst.end_time, pst.is_delayed,
              u.full_name as assigned_user,
@@ -143,6 +150,58 @@ export class Product {
       LEFT JOIN users u ON pst.assigned_user_id = u.id
       ORDER BY p.created_at DESC
     `);
+  }
+
+  static async markKcsForm(productId, timestamp = null) {
+    const current = await dbGet(
+      'SELECT kcs_form, kcs_form_at FROM products WHERE id = ?',
+      [productId]
+    );
+
+    if (current?.kcs_form) return this.findById(productId);
+
+    await dbRun(
+      'UPDATE products SET kcs_form = 1, kcs_form_at = COALESCE(?, CURRENT_TIMESTAMP) WHERE id = ?',
+      [timestamp, productId]
+    );
+
+    return this.findById(productId);
+  }
+
+  static async markKcsDinh(productId, timestamp = null) {
+    const current = await dbGet(
+      'SELECT kcs_form, kcs_form_at, kcs_dinh, kcs_dinh_at FROM products WHERE id = ?',
+      [productId]
+    );
+
+    if (!current) return null;
+
+    await dbRun(
+      `UPDATE products
+       SET kcs_form = 1,
+           kcs_form_at = COALESCE(kcs_form_at, COALESCE(?, CURRENT_TIMESTAMP)),
+           kcs_dinh = 1,
+           kcs_dinh_at = COALESCE(kcs_dinh_at, COALESCE(?, CURRENT_TIMESTAMP))
+       WHERE id = ?`,
+      [timestamp, timestamp, productId]
+    );
+
+    return this.findById(productId);
+  }
+
+  static async applyInboundKcsStatus(productId, kcsStatus) {
+    if (!kcsStatus) return this.findById(productId);
+
+    const normalized = String(kcsStatus).trim().toLowerCase();
+    if (normalized === 'form') {
+      return this.markKcsForm(productId);
+    }
+
+    if (normalized === 'completed') {
+      return this.markKcsDinh(productId);
+    }
+
+    return this.findById(productId);
   }
 }
 

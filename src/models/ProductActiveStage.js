@@ -1,4 +1,5 @@
 import { dbGet, dbAll, dbRun } from './database.js';
+import { Product } from './Product.js';
 
 export class ProductActiveStage {
   /**
@@ -99,6 +100,15 @@ export class ProductActiveStage {
        WHERE product_id = ? AND stage_id = ?`,
       [productId, stageId]
     );
+
+    const stage = await dbGet('SELECT stage_name FROM stages WHERE id = ?', [stageId]);
+    const stageName = stage?.stage_name ? this.normalizeStageName(stage.stage_name) : '';
+
+    if (this.isKcsFormStage(stageName)) {
+      await Product.markKcsForm(productId);
+    } else if (this.isKcsDinhStage(stageName)) {
+      await Product.markKcsDinh(productId);
+    }
 
     // Kiểm tra và tự động đưa vào kho nếu tất cả stages đã hoàn thành
     const { Warehouse } = await import('./Warehouse.js');
@@ -281,6 +291,26 @@ export class ProductActiveStage {
       WHERE psw.product_id = ? AND psw.stage_id = ?
       ORDER BY u.full_name ASC
     `, [productId, stageId]);
+  }
+
+  static normalizeStageName(name) {
+    return String(name)
+      .replace(/_/g, ' ')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
+  }
+
+  static isKcsFormStage(normalizedName) {
+    const name = normalizedName || '';
+    return name.includes('KCS') && name.includes('FORM');
+  }
+
+  static isKcsDinhStage(normalizedName) {
+    const name = normalizedName || '';
+    return name.includes('KCS') && name.includes('DINH');
   }
 }
 

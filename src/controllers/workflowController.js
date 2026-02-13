@@ -10,6 +10,32 @@ import { Warehouse } from '../models/Warehouse.js';
 import User from '../models/User.js';
 import { dbGet, dbAll, dbRun } from '../models/database.js';
 
+const normalizeMonth = (value) => String(value).padStart(2, '0');
+
+const parseCsvNumbers = (value) => {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+    .map(item => Number(item))
+    .filter(item => Number.isFinite(item));
+};
+
+const getKcsFilters = (query) => {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  const months = parseCsvNumbers(query.months);
+  const years = parseCsvNumbers(query.years);
+
+  return {
+    months: months.length > 0 ? months : [currentMonth],
+    years: years.length > 0 ? years : [currentYear]
+  };
+};
+
 /**
  * Controller quản lý công việc Multi-Stage và Multi-Worker
  */
@@ -695,7 +721,7 @@ export const renderExportRecordPrint = async (req, res) => {
  */
 export const createInboundRecord = async (req, res) => {
   try {
-    const { productId, description, stages } = req.body;
+    const { productId, description, stages, kcsStatus } = req.body;
 
     if (!productId || !Array.isArray(stages) || stages.length === 0) {
       return res.status(400).json({ error: 'Thiếu thông tin nhập hàng' });
@@ -722,6 +748,8 @@ export const createInboundRecord = async (req, res) => {
         allowRework: true
       });
     }
+
+    await Product.applyInboundKcsStatus(productId, kcsStatus);
 
     await ActivityLog.log(req.user.id, 'CREATE_INBOUND_RECORD', {
       product_id: productId,
@@ -1253,6 +1281,78 @@ export const getMaterialRequestMessages = async (req, res) => {
 
   } catch (error) {
     console.error('Error getting material request messages:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getKcsFormProducts = async (req, res) => {
+  try {
+    const filters = getKcsFilters(req.query);
+    const monthValues = filters.months.map(normalizeMonth);
+    const yearValues = filters.years.map(year => String(year));
+
+    const monthPlaceholders = monthValues.map(() => '?').join(',');
+    const yearPlaceholders = yearValues.map(() => '?').join(',');
+
+    const rows = await dbAll(
+      `SELECT DISTINCT p.id, p.product_code, p.product_name,
+              COALESCE(psw.end_time, psw.start_time) as kcs_at,
+              p.created_at
+       FROM product_stage_workers psw
+       JOIN products p ON psw.product_id = p.id
+       JOIN stages s ON psw.stage_id = s.id
+       WHERE psw.status = 'completed'
+         AND s.stage_name LIKE '%KCS%'
+         AND s.stage_name LIKE '%FORM%'
+         AND strftime('%m', COALESCE(psw.end_time, psw.start_time)) IN (${monthPlaceholders})
+         AND strftime('%Y', COALESCE(psw.end_time, psw.start_time)) IN (${yearPlaceholders})
+       ORDER BY kcs_at DESC, p.id DESC`,
+      [...monthValues, ...yearValues]
+    );
+
+    res.json({
+      success: true,
+      filters,
+      data: rows || []
+    });
+  } catch (error) {
+    console.error('Error loading KCS form products:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getKcsDinhProducts = async (req, res) => {
+  try {
+    const filters = getKcsFilters(req.query);
+    const monthValues = filters.months.map(normalizeMonth);
+    const yearValues = filters.years.map(year => String(year));
+
+    const monthPlaceholders = monthValues.map(() => '?').join(',');
+    const yearPlaceholders = yearValues.map(() => '?').join(',');
+
+    const rows = await dbAll(
+      `SELECT DISTINCT p.id, p.product_code, p.product_name,
+              COALESCE(psw.end_time, psw.start_time) as kcs_at,
+              p.created_at
+       FROM product_stage_workers psw
+       JOIN products p ON psw.product_id = p.id
+       JOIN stages s ON psw.stage_id = s.id
+       WHERE psw.status = 'completed'
+         AND s.stage_name LIKE '%KCS%'
+         AND (s.stage_name LIKE '%ĐÍNH%' OR s.stage_name LIKE '%DINH%')
+         AND strftime('%m', COALESCE(psw.end_time, psw.start_time)) IN (${monthPlaceholders})
+         AND strftime('%Y', COALESCE(psw.end_time, psw.start_time)) IN (${yearPlaceholders})
+       ORDER BY kcs_at DESC, p.id DESC`,
+      [...monthValues, ...yearValues]
+    );
+
+    res.json({
+      success: true,
+      filters,
+      data: rows || []
+    });
+  } catch (error) {
+    console.error('Error loading KCS dinh products:', error);
     res.status(500).json({ error: error.message });
   }
 };

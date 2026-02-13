@@ -181,6 +181,10 @@ async function initializeTables() {
         product_name TEXT NOT NULL,
         current_stage_id INTEGER NOT NULL,
         status TEXT DEFAULT 'pending',
+        kcs_form INTEGER DEFAULT 0,
+        kcs_dinh INTEGER DEFAULT 0,
+        kcs_form_at DATETIME,
+        kcs_dinh_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         completed_at DATETIME,
         FOREIGN KEY (current_stage_id) REFERENCES stages(id)
@@ -229,8 +233,10 @@ async function initializeTables() {
       { name: 'RẬP', hours: 4, order: 1 },
       { name: 'CẮT', hours: 4, order: 2 },
       { name: 'MAY', hours: 6, order: 3 },
-      { name: 'THIẾT_KẾ', hours: 6, order: 4 },
-      { name: 'ĐÍNH_KẾT', hours: 12, order: 5 }
+      { name: 'THIẾT KẾ', hours: 6, order: 4 },
+      { name: 'ĐÍNH KẾT', hours: 12, order: 5 },
+      { name: 'KCS FORM', hours: 2, order: 6 },
+      { name: 'KCS ĐÍNH', hours: 2, order: 7 }
     ];
 
     for (const stage of stagesList) {

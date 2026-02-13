@@ -89,6 +89,12 @@
       <button onclick="showMainTab('inbound')" id="inboundTab" class="py-3 px-5 font-semibold text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
         <i class="fas fa-clipboard-check mr-2"></i>Nhập hàng
       </button>
+      <button onclick="showMainTab('kcsForm')" id="kcsFormTab" class="py-3 px-5 font-semibold text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
+        <i class="fas fa-clipboard-list mr-2"></i>KCS Form
+      </button>
+      <button onclick="showMainTab('kcsDinh')" id="kcsDinhTab" class="py-3 px-5 font-semibold text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
+        <i class="fas fa-clipboard-check mr-2"></i>KCS Đính
+      </button>
     </div>
 
     <!-- Products List -->
@@ -203,6 +209,14 @@
                 <label class="block text-sm font-medium text-gray-700">Ghi chú nhập hàng</label>
                 <input type="text" id="inboundDescription" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Mô tả ngắn">
               </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Trạng thái KCS</label>
+                <select id="inboundKcsStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                  <option value="">-- Chưa xác định --</option>
+                  <option value="form">KCS Form</option>
+                  <option value="completed">KCS Đính (hoàn chỉnh)</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -271,6 +285,74 @@
             </table>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div id="kcsFormTab-content" class="bg-white shadow rounded-lg overflow-hidden hidden">
+      <div class="px-6 py-4 border-b border-gray-200 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <h2 class="text-xl font-semibold text-gray-900">Danh sách KCS Form</h2>
+        <div class="flex flex-wrap gap-3 items-end">
+          <div>
+            <label class="block text-xs font-medium text-gray-600">Tháng</label>
+            <select id="kcsFormMonths" multiple class="mt-1 block w-44 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600">Năm</label>
+            <select id="kcsFormYears" multiple class="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></select>
+          </div>
+          <button onclick="loadKcsFormProducts()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+            <i class="fas fa-filter mr-2"></i>Lọc
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã sản phẩm</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên sản phẩm</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày KCS</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+            </tr>
+          </thead>
+          <tbody id="kcsFormTableBody" class="bg-white divide-y divide-gray-200">
+            <!-- Data will be loaded via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="kcsDinhTab-content" class="bg-white shadow rounded-lg overflow-hidden hidden">
+      <div class="px-6 py-4 border-b border-gray-200 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <h2 class="text-xl font-semibold text-gray-900">Danh sách KCS Đính</h2>
+        <div class="flex flex-wrap gap-3 items-end">
+          <div>
+            <label class="block text-xs font-medium text-gray-600">Tháng</label>
+            <select id="kcsDinhMonths" multiple class="mt-1 block w-44 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600">Năm</label>
+            <select id="kcsDinhYears" multiple class="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></select>
+          </div>
+          <button onclick="loadKcsDinhProducts()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+            <i class="fas fa-filter mr-2"></i>Lọc
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã sản phẩm</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên sản phẩm</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày KCS</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+            </tr>
+          </thead>
+          <tbody id="kcsDinhTableBody" class="bg-white divide-y divide-gray-200">
+            <!-- Data will be loaded via JavaScript -->
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -699,26 +781,22 @@ function closeAssignWorkersModal() {
 }
 
 function showMainTab(tabName) {
-  const tabs = ['active', 'completed', 'export', 'inbound'];
-  tabs.forEach(tab => {
-    const contentId = tab === 'active'
-      ? 'activeTab-content'
-      : (tab === 'completed'
-        ? 'completedProductsTab-content'
-        : (tab === 'export' ? 'exportManagementTab-content' : 'inboundTab-content'));
+  const tabMap = {
+    active: { contentId: 'activeTab-content', buttonId: 'activeProductsTab' },
+    completed: { contentId: 'completedProductsTab-content', buttonId: 'completedProductsTab' },
+    export: { contentId: 'exportManagementTab-content', buttonId: 'exportManagementTab' },
+    inbound: { contentId: 'inboundTab-content', buttonId: 'inboundTab' },
+    kcsForm: { contentId: 'kcsFormTab-content', buttonId: 'kcsFormTab' },
+    kcsDinh: { contentId: 'kcsDinhTab-content', buttonId: 'kcsDinhTab' }
+  };
 
-    const buttonId = tab === 'active'
-      ? 'activeProductsTab'
-      : (tab === 'completed'
-        ? 'completedProductsTab'
-        : (tab === 'export' ? 'exportManagementTab' : 'inboundTab'));
-
+  Object.entries(tabMap).forEach(([tab, ids]) => {
     const isCurrent = tab === tabName;
-    document.getElementById(contentId).classList.toggle('hidden', !isCurrent);
-    document.getElementById(buttonId).classList.toggle('border-indigo-600', isCurrent);
-    document.getElementById(buttonId).classList.toggle('text-indigo-600', isCurrent);
-    document.getElementById(buttonId).classList.toggle('border-transparent', !isCurrent);
-    document.getElementById(buttonId).classList.toggle('text-gray-600', !isCurrent);
+    document.getElementById(ids.contentId).classList.toggle('hidden', !isCurrent);
+    document.getElementById(ids.buttonId).classList.toggle('border-indigo-600', isCurrent);
+    document.getElementById(ids.buttonId).classList.toggle('text-indigo-600', isCurrent);
+    document.getElementById(ids.buttonId).classList.toggle('border-transparent', !isCurrent);
+    document.getElementById(ids.buttonId).classList.toggle('text-gray-600', !isCurrent);
   });
 }
 
@@ -1083,6 +1161,157 @@ async function loadInboundRecords() {
   }
 }
 
+function setSelectOptions(selectEl, options, selectedValues) {
+  if (!selectEl) return;
+  const selectedSet = new Set(selectedValues.map(String));
+  selectEl.innerHTML = '';
+  options.forEach(option => {
+    const opt = document.createElement('option');
+    opt.value = option.value;
+    opt.textContent = option.label;
+    if (selectedSet.has(String(option.value))) {
+      opt.selected = true;
+    }
+    selectEl.appendChild(opt);
+  });
+}
+
+function initKcsFilters() {
+  const now = new Date();
+  const currentMonth = String(now.getMonth() + 1);
+  const currentYear = String(now.getFullYear());
+  const yearStart = now.getFullYear() - 3;
+  const yearEnd = now.getFullYear() + 1;
+
+  const monthOptions = Array.from({ length: 12 }, (_, idx) => ({
+    value: String(idx + 1),
+    label: `Tháng ${idx + 1}`
+  }));
+
+  const yearOptions = [];
+  for (let year = yearStart; year <= yearEnd; year += 1) {
+    yearOptions.push({ value: String(year), label: String(year) });
+  }
+
+  setSelectOptions(document.getElementById('kcsFormMonths'), monthOptions, [currentMonth]);
+  setSelectOptions(document.getElementById('kcsFormYears'), yearOptions, [currentYear]);
+  setSelectOptions(document.getElementById('kcsDinhMonths'), monthOptions, [currentMonth]);
+  setSelectOptions(document.getElementById('kcsDinhYears'), yearOptions, [currentYear]);
+}
+
+function getSelectedFilterValues(monthSelectId, yearSelectId) {
+  const monthSelect = document.getElementById(monthSelectId);
+  const yearSelect = document.getElementById(yearSelectId);
+  const months = Array.from(monthSelect?.selectedOptions || []).map(opt => opt.value);
+  const years = Array.from(yearSelect?.selectedOptions || []).map(opt => opt.value);
+
+  if (months.length === 0 || years.length === 0) {
+    const now = new Date();
+    const fallbackMonth = String(now.getMonth() + 1);
+    const fallbackYear = String(now.getFullYear());
+
+    if (months.length === 0 && monthSelect) {
+      Array.from(monthSelect.options).forEach(opt => {
+        if (opt.value === fallbackMonth) opt.selected = true;
+      });
+      months.push(fallbackMonth);
+    }
+
+    if (years.length === 0 && yearSelect) {
+      Array.from(yearSelect.options).forEach(opt => {
+        if (opt.value === fallbackYear) opt.selected = true;
+      });
+      years.push(fallbackYear);
+    }
+  }
+
+  return { months, years };
+}
+
+async function loadKcsFormProducts() {
+  try {
+    const { months, years } = getSelectedFilterValues('kcsFormMonths', 'kcsFormYears');
+    const params = new URLSearchParams();
+    if (months.length > 0) params.set('months', months.join(','));
+    if (years.length > 0) params.set('years', years.join(','));
+
+    const response = await fetch(`/workflow/kcs/form?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load KCS form products');
+
+    const result = await response.json();
+    const data = result.data || [];
+    const tbody = document.getElementById('kcsFormTableBody');
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Không có dữ liệu</td></tr>';
+      return;
+    }
+
+    data.forEach(item => {
+      const row = document.createElement('tr');
+      row.className = 'hover:bg-gray-50';
+      row.innerHTML = `
+        <td class="px-6 py-4 text-sm font-semibold text-gray-900">${item.product_code}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">${item.product_name}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${item.kcs_at ? new Date(item.kcs_at).toLocaleString('vi-VN') : '-'}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${item.created_at ? new Date(item.created_at).toLocaleString('vi-VN') : '-'}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error loading KCS form products:', error);
+    alert('Failed to load KCS form products');
+  }
+}
+
+async function loadKcsDinhProducts() {
+  try {
+    const { months, years } = getSelectedFilterValues('kcsDinhMonths', 'kcsDinhYears');
+    const params = new URLSearchParams();
+    if (months.length > 0) params.set('months', months.join(','));
+    if (years.length > 0) params.set('years', years.join(','));
+
+    const response = await fetch(`/workflow/kcs/dinh?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load KCS dinh products');
+
+    const result = await response.json();
+    const data = result.data || [];
+    const tbody = document.getElementById('kcsDinhTableBody');
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Không có dữ liệu</td></tr>';
+      return;
+    }
+
+    data.forEach(item => {
+      const row = document.createElement('tr');
+      row.className = 'hover:bg-gray-50';
+      row.innerHTML = `
+        <td class="px-6 py-4 text-sm font-semibold text-gray-900">${item.product_code}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">${item.product_name}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${item.kcs_at ? new Date(item.kcs_at).toLocaleString('vi-VN') : '-'}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${item.created_at ? new Date(item.created_at).toLocaleString('vi-VN') : '-'}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error loading KCS dinh products:', error);
+    alert('Failed to load KCS dinh products');
+  }
+}
+
 function toggleInboundType() {
   const inboundType = document.querySelector('input[name="inboundType"]:checked').value;
   const productFields = document.getElementById('productInboundFields');
@@ -1128,6 +1357,7 @@ async function handleInboundSubmit(event) {
     if (inboundType === 'product') {
       const productId = document.getElementById('inboundProductSelect').value;
       const description = document.getElementById('inboundDescription').value.trim();
+      const kcsStatus = document.getElementById('inboundKcsStatus')?.value || '';
       
       if (!productId) {
         alert('Vui lòng chọn sản phẩm');
@@ -1152,7 +1382,7 @@ async function handleInboundSubmit(event) {
       }
 
       endpoint = '/workflow/inbound/create';
-      body = { productId, description, stages };
+      body = { productId, description, stages, kcsStatus };
     } else {
       // Custom item inbound
       const itemType = document.getElementById('customInboundItemType').value;
@@ -1347,6 +1577,9 @@ document.addEventListener('DOMContentLoaded', () => {
   loadExportRecords();
   loadInboundRecords();
   loadInboundFormData();
+  initKcsFilters();
+  loadKcsFormProducts();
+  loadKcsDinhProducts();
   document.getElementById('inboundForm')?.addEventListener('submit', handleInboundSubmit);
 });
 

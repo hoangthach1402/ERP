@@ -85,6 +85,10 @@ async function initializeDatabase() {
         product_name TEXT NOT NULL,
         current_stage_id INTEGER NOT NULL,
         status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'completed', 'delayed')),
+        kcs_form INTEGER DEFAULT 0,
+        kcs_dinh INTEGER DEFAULT 0,
+        kcs_form_at DATETIME,
+        kcs_dinh_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         completed_at DATETIME,
         FOREIGN KEY (current_stage_id) REFERENCES stages(id)
@@ -316,13 +320,31 @@ async function initializeDatabase() {
 
     console.log('✓ Tables created successfully');
 
+    const productColumns = await dbAll("PRAGMA table_info('products')");
+    const productColumnNames = new Set((productColumns || []).map(col => col.name));
+
+    if (!productColumnNames.has('kcs_form')) {
+      await dbRun('ALTER TABLE products ADD COLUMN kcs_form INTEGER DEFAULT 0');
+    }
+    if (!productColumnNames.has('kcs_dinh')) {
+      await dbRun('ALTER TABLE products ADD COLUMN kcs_dinh INTEGER DEFAULT 0');
+    }
+    if (!productColumnNames.has('kcs_form_at')) {
+      await dbRun('ALTER TABLE products ADD COLUMN kcs_form_at DATETIME');
+    }
+    if (!productColumnNames.has('kcs_dinh_at')) {
+      await dbRun('ALTER TABLE products ADD COLUMN kcs_dinh_at DATETIME');
+    }
+
     // Insert stages/công đoạn
     const stagesList = [
       { name: 'RẬP', hours: 4, order: 1, desc: 'Khâu rập - Chuẩn bị vải' },
       { name: 'CẮT', hours: 4, order: 2, desc: 'Khâu cắt - Cắt vải theo mẫu' },
       { name: 'MAY', hours: 6, order: 3, desc: 'Khâu may - May chính và may phụ' },
       { name: 'THIẾT KẾ', hours: 6, order: 4, desc: 'Khâu thiết kế đắp' },
-      { name: 'ĐÍNH KẾT', hours: 12, order: 5, desc: 'Khâu đính kết - Hoàn thiện' }
+      { name: 'ĐÍNH KẾT', hours: 12, order: 5, desc: 'Khâu đính kết - Hoàn thiện' },
+      { name: 'KCS FORM', hours: 2, order: 6, desc: 'KCS form - kiểm tra sản phẩm sau may' },
+      { name: 'KCS ĐÍNH', hours: 2, order: 7, desc: 'KCS đính - kiểm tra sau đính kết' }
     ];
 
     for (const stage of stagesList) {

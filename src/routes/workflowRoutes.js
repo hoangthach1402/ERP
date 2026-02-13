@@ -126,6 +126,10 @@ router.get('/inbound-records', workflowController.getInboundRecords);
 router.post('/inbound/create', workflowController.createInboundRecord);
 router.post('/inbound/create-custom', workflowController.createCustomInboundRecord);
 
+// KCS reports
+router.get('/kcs/form', workflowController.getKcsFormProducts);
+router.get('/kcs/dinh', workflowController.getKcsDinhProducts);
+
 // Warehouse management
 router.post('/warehouse/add-custom-item', workflowController.addCustomItemToWarehouse);
 
