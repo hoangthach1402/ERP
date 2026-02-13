@@ -3,69 +3,6 @@ import { ProductStageTask } from '../models/Stage.js';
 import ActivityLog from '../models/ActivityLog.js';
 import { notifyNewProductRap } from '../services/telegramRapNotification.js';
 
-export const getDashboard = async (req, res) => {
-  try {
-    const products = await Product.getProductsWithDetails();
-    
-    // Calculate summary stats
-    const stats = {
-      total: products.length,
-      completed: products.filter(p => p.status === 'completed').length,
-      processing: products.filter(p => p.status === 'processing').length,
-      delayed: products.filter(p => p.is_delayed === 1).length
-    };
-
-    const recentLogs = await ActivityLog.getRecent(10);
-
-    res.render('dashboard', {
-      products,
-      stats,
-      user: req.session.user,
-      recentLogs,
-      role: req.user.role
-    });
-  } catch (error) {
-    console.error('Dashboard error:', error);
-    res.status(500).render('error', { error: 'Error loading dashboard' });
-  }
-};
-
-export const getProductDetail = async (req, res) => {
-  try {
-    const { productId } = req.params;
-    const product = await Product.findById(productId);
-
-    if (!product) {
-      return res.status(404).render('error', { error: 'Product not found' });
-    }
-
-    console.log('Product detail data:', product);
-
-    const tasks = await ProductStageTask.getTasksByProduct(productId);
-    const logs = await ActivityLog.getByProduct(productId);
-    const parsedLogs = logs.map(log => {
-      let details = null;
-      try {
-        details = log.details ? JSON.parse(log.details) : null;
-      } catch (parseError) {
-        details = null;
-      }
-      return { ...log, details }; 
-    });
-
-    res.render('product-detail', {
-      product,
-      tasks,
-      logs: parsedLogs,
-      user: req.session.user,
-      role: req.user.role
-    });
-  } catch (error) {
-    console.error('Product detail error:', error);
-    res.status(500).render('error', { error: 'Error loading product details' });
-  }
-};
-
 export const createProduct = async (req, res) => {
   try {
     const { product_code, product_name, stage_1_hours, stage_2_hours, stage_3_hours, stage_4_hours, stage_5_hours } = req.body;
