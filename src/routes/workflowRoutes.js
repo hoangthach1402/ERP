@@ -71,19 +71,25 @@ router.get('/product/:productId/active-stages', workflowController.getProductAct
 // Lấy tất cả workers của một product
 router.get('/product/:productId/workers', workflowController.getProductWorkers);
 
-// Lấy workers của một product-stage cụ thể
-router.get('/product/:productId/stage/:stageId/workers', workflowController.getStageWorkers);
-
-// Lấy thống kê workers theo stage
-router.get('/stage/:stageId/workers/stats', workflowController.getStageWorkersStats);
-
 // Lấy chi tiết tất cả stages của một product
 router.get('/product/:productId/stages/detail', workflowController.getProductStagesDetail);
 
 // Lấy tổng hợp tiến độ từng bộ phận (department) của một product
 router.get('/product/:productId/department-stats', workflowController.getProductDepartmentStats);
 
+// Lấy material requests cho một stage (MUST BE BEFORE /stage/:stageId/workers)
+router.get('/product/:productId/stage/:stageId/material-requests', workflowController.getMaterialRequestsForStage);
+
+// Lấy workers của một product-stage cụ thể
+router.get('/product/:productId/stage/:stageId/workers', workflowController.getStageWorkers);
+
 // Cập nhật định mức giờ (norm_hours) cho stage
 router.post('/product/:productId/stage/:stageId/update-norm-hours', workflowController.updateStageNormHours);
+
+// Lấy thống kê workers theo stage
+router.get('/stage/:stageId/workers/stats', workflowController.getStageWorkersStats);
+
+// Update material request (comment, status)
+router.post('/material-request/:requestId/update', workflowController.updateMaterialRequest);
 
 export default router;

@@ -3,6 +3,7 @@ import { ProductStageWorker } from '../models/ProductStageWorker.js';
 import { Product } from '../models/Product.js';
 import { Stage } from '../models/Stage.js';
 import { ActivityLog } from '../models/ActivityLog.js';
+import { MaterialRequest } from '../models/MaterialRequest.js';
 import User from '../models/User.js';
 import { dbGet, dbAll, dbRun } from '../models/database.js';
 
@@ -763,6 +764,94 @@ export const getProductDepartmentStats = async (req, res) => {
 
   } catch (error) {
     console.error('Error getting department stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Lấy tất cả material requests cho một product-stage
+ */
+export const getMaterialRequestsForStage = async (req, res) => {
+  try {
+    const { productId, stageId } = req.params;
+
+    const requests = await dbAll(`
+      SELECT mr.*, 
+             p.product_code, p.product_name,
+             s.stage_name,
+             u1.full_name as requested_by_name,
+             u1.role as requested_by_role,
+             u2.full_name as purchased_by_name,
+             u2.role as purchased_by_role
+      FROM material_requests mr
+      LEFT JOIN products p ON mr.product_id = p.id
+      LEFT JOIN stages s ON mr.stage_id = s.id
+      LEFT JOIN users u1 ON mr.requested_by_user_id = u1.id
+      LEFT JOIN users u2 ON mr.purchased_by_user_id = u2.id
+      WHERE mr.product_id = ? AND mr.stage_id = ?
+      ORDER BY mr.created_at DESC
+    `, [productId, stageId]);
+
+    res.json({
+      success: true,
+      data: requests || []
+    });
+
+  } catch (error) {
+    console.error('Error getting material requests:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Thêm comment hoặc update status cho material request
+ */
+export const updateMaterialRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { comment, status } = req.body;
+
+    // Get current request
+    const request = await MaterialRequest.findById(requestId);
+    if (!request) {
+      return res.status(404).json({ error: 'Material request not found' });
+    }
+
+    // Update status (only for purchasing department)
+    if (status && req.user.role.toUpperCase() === 'THU_MUA') {
+      await dbRun(
+        'UPDATE material_requests SET status = ?, purchased_by_user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [status, req.user.id, requestId]
+      );
+    }
+
+    // Add comment
+    if (comment) {
+      await dbRun(
+        'INSERT INTO material_request_messages (request_id, user_id, message, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+        [requestId, req.user.id, comment]
+      );
+    }
+
+    // Get updated request with comments
+    const comments = await dbAll(
+      'SELECT mrm.*, u.full_name, u.role FROM material_request_messages mrm LEFT JOIN users u ON mrm.user_id = u.id WHERE mrm.request_id = ? ORDER BY mrm.created_at DESC',
+      [requestId]
+    );
+
+    const updated = await MaterialRequest.findById(requestId);
+
+    res.json({
+      success: true,
+      message: 'Material request updated successfully',
+      data: {
+        ...updated,
+        comments: comments
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating material request:', error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -125,6 +125,11 @@ async function loadTasks(status = null) {
           renderHoursChart(task);
         }, 100);
       }
+      
+      // Load material requests for all tasks
+      setTimeout(() => {
+        loadMaterialRequests(task.product_id, task.stage_id);
+      }, 150);
     });
     
   } catch (error) {
@@ -210,6 +215,19 @@ function createTaskCard(task) {
           <p class="text-sm text-gray-700"><strong>Notes:</strong> ${task.notes}</p>
         </div>
       ` : ''}
+      
+      <!-- Material Requests Section -->
+      <div id="materialRequests-${task.product_id}-${task.stage_id}" class="mt-4 border-t pt-4">
+        <div class="flex justify-between items-center mb-3">
+          <h4 class="font-semibold text-gray-900">🛒 Yêu Cầu Mua Hàng</h4>
+          <button onclick="loadMaterialRequests(${task.product_id}, ${task.stage_id})" class="text-xs text-blue-600 hover:text-blue-800">
+            <i class="fas fa-sync"></i>
+          </button>
+        </div>
+        <div id="materialRequestsList-${task.product_id}-${task.stage_id}" class="space-y-2 text-sm">
+          <p class="text-gray-500 italic">Loading...</p>
+        </div>
+      </div>
     </div>
   `;
   
@@ -397,6 +415,112 @@ function openMaterialRequestModal(productId, productCode, stageName) {
   modal.classList.remove('hidden');
 }
 
+// Load and display material requests for a stage
+async function loadMaterialRequests(productId, stageId) {
+  try {
+    const response = await fetch(`/workflow/product/${productId}/stage/${stageId}/material-requests`, {
+      headers: { 'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load material requests');
+    const data = await response.json();
+    const requests = data.data || [];
+
+    const container = document.getElementById(`materialRequestsList-${productId}-${stageId}`);
+    if (!container) return;
+
+    if (requests.length === 0) {
+      container.innerHTML = '<p class="text-gray-500">Chưa có yêu cầu mua hàng</p>';
+      return;
+    }
+
+    container.innerHTML = requests.map(req => {
+      const statusColors = {
+        'pending': 'bg-yellow-100 text-yellow-800',
+        'purchased': 'bg-green-100 text-green-800',
+        'delivered': 'bg-blue-100 text-blue-800'
+      };
+      const statusText = {
+        'pending': 'Chờ',
+        'purchased': 'Đã Mua',
+        'delivered': 'Đã Nhận'
+      };
+
+      return `
+        <div class="p-3 border rounded-lg bg-orange-50 cursor-pointer" onclick="event.stopPropagation(); expandMaterialRequest(this, ${req.id})">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <p class="font-semibold text-gray-900 text-sm">${req.reason || 'Yêu cầu'}</p>
+              <p class="text-xs text-gray-600 mt-1">Yêu cầu bởi: ${req.requested_by_name}</p>
+            </div>
+            <span class="px-2 py-1 text-xs font-semibold rounded ${statusColors[req.status] || statusColors.pending}">
+              ${statusText[req.status] || req.status}
+            </span>
+          </div>
+          <div id="materialRequestDetail-${req.id}" class="hidden mt-3 space-y-2 border-t pt-2" style="display:none;">
+            <p class="text-xs text-gray-600"><strong>Trạng thái:</strong> ${req.status}</p>
+            ${req.purchased_by_name ? `<p class="text-xs text-gray-600"><strong>Xử lý bởi:</strong> ${req.purchased_by_name}</p>` : ''}
+            ${req.expected_delivery_date ? `<p class="text-xs text-gray-600"><strong>Dự kiến giao:</strong> ${new Date(req.expected_delivery_date).toLocaleDateString('vi-VN')}</p>` : ''}
+            <textarea id="commentInput-${req.id}" class="w-full p-2 text-xs border rounded" placeholder="Thêm bình luận..." onclick="event.stopPropagation()"></textarea>
+            <button onclick="event.stopPropagation(); addMaterialRequestComment(${req.id})" class="w-full px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+              Gửi Bình Luận
+            </button>
+            <div id="comments-${req.id}" class="text-xs space-y-1 max-h-24 overflow-y-auto"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  } catch (error) {
+    console.error('Error loading material requests:', error);
+    const container = document.getElementById(`materialRequestsList-${productId}-${stageId}`);
+    if (container) {
+      container.innerHTML = `<p class="text-red-500 text-xs">Lỗi: ${error.message}</p>`;
+    }
+  }
+}
+
+// Expand/collapse material request details
+function expandMaterialRequest(element, requestId) {
+  const detail = document.getElementById(`materialRequestDetail-${requestId}`);
+  if (detail) {
+    detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+// Add comment to material request
+async function addMaterialRequestComment(requestId) {
+  const commentInput = document.getElementById(`commentInput-${requestId}`);
+  const comment = commentInput.value.trim();
+
+  if (!comment) {
+    alert('Vui lòng nhập bình luận');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/workflow/material-request/${requestId}/update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken || localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify({ comment })
+    });
+
+    if (!response.ok) throw new Error('Failed to add comment');
+
+    commentInput.value = '';
+    alert('Bình luận đã được thêm!');
+    // Reload tasks to refresh material requests
+    loadTasks(currentStatus);
+
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    alert('Lỗi: ' + error.message);
+  }
+}
+
 function closeMaterialRequestModal() {
   const modal = document.getElementById('materialRequestModal');
   modal.classList.add('hidden');
@@ -548,9 +672,6 @@ async function submitAssignWorkers(event) {
 
 // Load tasks on page load
 document.addEventListener('DOMContentLoaded', () => loadTasks('all'));
-
-// Auto-refresh every 30 seconds
-setInterval(() => loadTasks(currentStatus), 30000);
 </script>
 
 <!-- Assign Workers Modal -->
